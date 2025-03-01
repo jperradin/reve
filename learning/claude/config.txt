@@ -1,0 +1,22 @@
+# Trajectory Analysis Configuration
+
+# Input/Output Settings
+input_file = waterM2825-5kbar.xyz
+output_dir = analysis_results
+
+# Trajectory Settings
+num_atoms = 1000
+start_frame = 1
+end_frame = 10
+
+# Analysis Settings
+cutoff = 3.5
+periodic_boundary = true
+min_cluster_size = 3
+
+# File Format Settings
+# Options: xyz, extended_xyz, lammps
+file_format = extended_xyz
+
+# Default box size for standard XYZ files (if not specified in the file)
+default_box_size = 100.0
