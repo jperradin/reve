@@ -1,2 +1,4 @@
-python/
-learn/
+archive/
+inputs/
+my_tests.py
+__pycache__
