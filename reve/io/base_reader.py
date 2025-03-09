@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import TextIO, List, Tuple, Optional, Dict, Generator
 import numpy as np
+from tqdm import tqdm
 
 from ..core.frame import Frame
 from ..core.atom import Atom
 
 class BaseReader(ABC):
     """Abstract base class for trajectory readers."""
+
+    quiet: bool = False
+
+    
 
     @abstractmethod
     def _read_header(self, file: TextIO) -> Tuple[int, Dict]:
@@ -53,21 +58,39 @@ class BaseReader(ABC):
         """Checks if the reader supports the given file format."""
         pass
 
+    @abstractmethod
+    def count_frames(self, filename: str) -> int:
+        """Counts the number of frames in the trajectory file."""
+        pass
+
+    def set_quiet(self, quiet: bool):
+        self.quiet = quiet
+
     def read(self, filename: str) -> Tuple[List[Frame], Dict]:
         """Reads the entire trajectory file, returning all frames at once."""
+        num_frames = self.count_frames(filename)
+
         frames, metadata = [], {}
         try:
             with open(filename, 'r') as file:
-                num_atoms, header_metadata = self._read_header(file)
-                metadata.update(header_metadata)
+                progress_bar = tqdm(
+                    range(num_frames), total=num_frames,
+                    unit='frame', colour='blue',
+                    desc='Reading frames',
+                    disable=self.quiet,
+                    )
 
-                while True:  # Keep reading until _read_frame_data returns None
+                for _ in progress_bar:
+                    num_atoms, header_metadata = self._read_header(file)
+                    metadata.update(header_metadata)
+
                     frame_data = self._read_frame_data(file, num_atoms)
                     if frame_data is None:  # Check for None (end of file)
                         break
-
-                    atoms = [
-                        Atom(
+                    
+                    atoms = []
+                    for atom_data in frame_data:
+                        this_atom = Atom(
                             symbol=atom_data['symbol'],
                             position=atom_data['position'],
                             atom_id=atom_data.get('atom_id'),
@@ -75,68 +98,65 @@ class BaseReader(ABC):
                             mass=atom_data.get('mass'),
                             correlation_length=atom_data.get('correlation_length')
                         )
-                        for atom_data in frame_data
-                    ]
+                        atoms.append(this_atom)
+
                     lattice = metadata.get("lattice", np.eye(3))
-                    #Crucially, frame_id is determined by the ORDER in the file
-                    frame = Frame(atoms=atoms, lattice=lattice, frame_id=len(frames))
+
+                    frame = Frame(atoms=atoms, lattice=lattice)
                     frames.append(frame)
 
-                footer_metadata = self._read_footer(file)
-                metadata.update(footer_metadata)
+                    footer_metadata = self._read_footer(file)
+                    metadata.update(footer_metadata)
+
         except (FileNotFoundError, ValueError, IOError) as e: #Catch IOErrors
             print(f"Error reading file {filename}: {e}")
             return [], {}  # Return empty lists on error
         except Exception as e: #Catch all exceptions.
             print(f"An unexpected error occurred: {e}")
             return [], {}
+
         return frames, metadata
 
-
     def iter_frames(self, filename: str) -> Generator[Frame, None, None]:
-      """
-      Iterates through the frames of the trajectory file, yielding one Frame at a time.
-      This is a generator, so it avoids loading the entire trajectory into memory.
-      """
-      try:
-        with open(filename, 'r') as file:
-            num_atoms, header_metadata = self._read_header(file)
-            frame_id = 0  # Keep track of the frame ID
+        """
+        Iterates through the frames of the trajectory file, yielding one Frame at a time.
+        This is a generator, so it avoids loading the entire trajectory into memory.
+        """
+        try:
+            with open(filename, 'r') as file:
+                num_atoms, header_metadata = self._read_header(file)
+                metadata = header_metadata
 
-            while True:
-                frame_data = self._read_frame_data(file, num_atoms)
-                if frame_data is None: # Check for None (end-of-file)
-                    break
+                while True:
+                    frame_data = self._read_frame_data(file, num_atoms)
+                    if frame_data is None:
+                        break
 
-                atoms = [
-                    Atom(
-                        symbol=atom_data['symbol'],
-                        position=atom_data['position'],
-                        identifier=atom_data.get('identifier'),
-                        velocity=atom_data.get('velocity'),
-                        mass=atom_data.get('mass'),
-                        correlation_length=atom_data.get('correlation_length')
-                    )
-                    for atom_data in frame_data
-                ]
-                lattice = header_metadata.get("lattice", np.eye(3))
-                frame = Frame(atoms=atoms, lattice=lattice, frame_id=frame_id)
-                yield frame
-                frame_id += 1
+                    atoms = []
+                    for atom_data in frame_data:
+                        this_atom = Atom(
+                            symbol=atom_data['symbol'],
+                            position=atom_data['position'],
+                            atom_id=atom_data.get('atom_id'),
+                            velocity=atom_data.get('velocity'),
+                            mass=atom_data.get('mass'),
+                            correlation_length=atom_data.get('correlation_length')
+                        )
+                        atoms.append(this_atom)
+                    
+                    lattice = metadata.get("lattice", np.eye(3))
 
-            # We *could* technically read footer data here, BUT
-            # it's generally better to read the footer only once,
-            # either with the `read` method or with a separate
-            # `read_metadata` method.  Avoid reading the footer
-            # repeatedly during iteration.
+                    frame = Frame(atoms=atoms, lattice=lattice)
+                    frame_id = frame.frame_id
+                    print(f"Frame {frame_id} loaded.")
+                    yield frame
 
-      except (FileNotFoundError, ValueError, IOError) as e:
-        print(f"Error reading file {filename}: {e}")
-        return  # Stop iteration on error
-      except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return
-
+        except (FileNotFoundError, ValueError, IOError) as e: #Catch IOErrors
+            print(f"Error reading file {filename}: {e}")
+            return
+        except Exception as e: #Catch all exceptions.
+            print(f"An unexpected error occurred: {e}")
+            return
 
     def read_metadata(self, filename: str) -> Dict:
       """Reads only the header and footer metadata, without reading frame data."""
@@ -163,3 +183,4 @@ class BaseReader(ABC):
             return {} # Or raise
 
       return metadata
+

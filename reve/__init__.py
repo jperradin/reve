@@ -9,6 +9,7 @@ with a focus on memory efficiency and performance.
 # Import core components
 from .core.atom import Atom
 from .core.frame import Frame
+from .core.system import System
 
 # Import IO components
 from .io.reader_factory import ReaderFactory

@@ -29,7 +29,7 @@ class Atom:
     mass: Optional[float] = field(default=None, compare=True, repr=True)
     correlation_length: Optional[float] = field(default=None, compare=True, repr=True)
 
-    _next_id = 1
+    _next_id = 0
 
     def __post_init__(self):
         """ Initialisation after object creation """

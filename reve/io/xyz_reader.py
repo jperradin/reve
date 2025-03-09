@@ -5,42 +5,52 @@ from..io.base_reader import BaseReader
 
 class XYZReader(BaseReader):
     """Reader for XYZ trajectory files."""
-
     def supports_file_format(self, filename: str) -> bool:
         return filename.lower().endswith(".xyz")
 
-    # @override
+    def count_frames(self, filename: str) -> int:
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+        file.close()
+
+        # number of frames = number of comment line
+        comments = [line for line in lines if 'Lattice' in line]
+        return len(comments)
+
+
     def _read_header(self, file: TextIO) -> Tuple[int, Dict]:
         """Reads the XYZ header (num_atoms and comment line)."""
         try:
             num_atoms = int(file.readline())
             comment = file.readline().strip()
             lattice = self._get_lattice(comment)  # Get lattice from comment
-            metadata = {"comment": comment, "lattice": lattice, "num_atoms": num_atoms}
+            metadata = {"comment": comment, "lattice": lattice, "num_atoms": num_atoms, "num_frames": self.count_frames(file.name)}
             return num_atoms, metadata
         except (ValueError, IOError) as e:  # Catch potential errors
             raise ValueError(f"Invalid XYZ header format: {e}")
 
-    # @override
     def _read_frame_data(self, file: TextIO, num_atoms: int) -> Optional[List[Dict]]:
         """Reads atom data for a single XYZ frame. Returns None at EOF."""
         frame_data = []
-        try:
-            for _ in range(num_atoms):
-                line = file.readline()
-                if not line:  # Check for end-of-file *during* frame reading
-                    return None  # Signal end of file
-                parts = line.split()
+        for _ in range(num_atoms):
+            line = file.readline()
+            if not line:  # Explicitly check for EOF *before* splitting
+                return None  # Signal end of file
+            parts = line.split()
+            # Check if we have enough parts *after* splitting, but *before* accessing
+            if len(parts) < 4:
+                return None  # Malformed line (likely EOF or corrupt file)
+            try:
                 symbol = parts[0]
                 x, y, z = map(float, parts[1:4])
                 frame_data.append({"symbol": symbol, "position": np.array([x, y, z], dtype=np.float64)})
-            return frame_data
-        except (ValueError, IndexError) as e:
-             # If there's an error reading *within* a frame, it's likely a corrupted file
-            raise ValueError(f"Error reading XYZ frame data: {e}")
+            except (ValueError, IndexError) as e:
+                print(f"Warning: Skipping malformed line in XYZ frame data: {e}")
+                return None
+
+        return frame_data
 
 
-    # @override
     def _read_footer(self, file: TextIO) -> Dict:
         """XYZ files typically don't have footers."""
         return {}

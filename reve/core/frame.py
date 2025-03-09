@@ -19,9 +19,11 @@ class Frame:
     lattice : Optional[np.ndarray]
         Lattice of the frame
     """
-    frame_id: int
+    frame_id: Optional[int] = None
     atoms: Optional[List[Atom]] = None
     lattice: Optional[np.ndarray] = None 
+
+    _next_id = 0
 
     def __post_init__(self):
         """ Initialisation after object creation """
@@ -29,6 +31,9 @@ class Frame:
             raise TypeError("atoms must be a list of Atoms")
         if self.lattice is not None and not isinstance(self.lattice, np.ndarray):
             raise TypeError("lattice must be a numpy array")
+        if self.frame_id is None:
+            object.__setattr__(self, 'frame_id', Frame._next_id)
+            Frame._next_id += 1
         
     def add_atom(self, atom: Atom) -> None:
         """ Add an Atom object to the list of atoms in the frame """
@@ -80,7 +85,7 @@ class Frame:
         return len(self.atoms)
 
     def __str__(self) -> str:
-        return f"Frame {self.frame_id} (id={self.frame_id})"
+        return f"Frame {self.frame_id} (num_atoms={len(self.atoms)})"
 
     def __repr__(self) -> str:
         return self.__str__()
