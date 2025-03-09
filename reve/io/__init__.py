@@ -1,4 +1,10 @@
-from .parser import FileFinder, FileValidatorFactory
-from .reader import FileReader, FileReaderFactory
+"""
+Input/Output components for the REVE package.
 
-__all__ = ["FileFinder", "FileValidatorFactory", "FileReader", "FileReaderFactory"]    
+This module contains readers for various molecular dynamics trajectory formats.
+"""
+
+from .base_reader import BaseReader
+from .xyz_reader import XYZReader
+from .lammps_reader import LAMMPSReader
+from .reader_factory import ReaderFactory
