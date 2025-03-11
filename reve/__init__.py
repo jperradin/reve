@@ -20,18 +20,8 @@ from .settings import Settings
 # Import main function
 from .main import main
 
+from .utils import print_title
+
 __version__ = "0.1.0"
 
-TITLE = fr'''
-                                                 
-`7MM"""Mq.  `7MM"""YMM `7MMF'   `7MF'`7MM"""YMM  
-  MM   `MM.   MM    `7   `MA     ,V    MM    `7  
-  MM   ,M9    MM   d      VM:   ,V     MM   d    
-  MMmmdM9     MMmmMM       MM.  M'     MMmmMM    
-  MM  YM.     MM   Y  ,    `MM A'      MM   Y  , 
-  MM   `Mb.   MM     ,M     :MM;       MM     ,M 
-.JMML. .JMM..JMMmmmmMMM      VF      .JMMmmmmMMM 
-
-'''
-print(TITLE)
-print(f"version \u279c\t {__version__}\n")
+print_title(__version__)

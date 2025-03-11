@@ -1,5 +1,7 @@
 import numpy as np
 from typing import List, Optional, Dict, Generator
+from tqdm import tqdm
+
 from reve.io.base_reader import BaseReader
 from reve.core.frame import Frame
 from reve.settings import Settings  # Import the Settings class
@@ -13,7 +15,6 @@ class System:
         reader (BaseReader): The file reader used to load data.
         settings (Settings): The settings object containing configuration parameters.
         current_frame (Optional[Frame]): The currently loaded frame.  None if no frame is loaded.
-        metadata (Dict): Metadata about the system (e.g., from file headers).
     """
 
     def __init__(self, reader: BaseReader, settings: Settings):
@@ -27,17 +28,9 @@ class System:
         self.reader: BaseReader = reader
         self.settings: Settings = settings
         self.current_frame: Optional[Frame] = None
-        self.metadata: Dict = {}
         self._frame_cache: List[Optional[Frame]] = []  # Cache for faster frame access.
         self._current_frame_index: Optional[int] = None # Index of the current frame
-
-        # Load metadata immediately upon initialization.
-        self._load_metadata()
-
-
-    def _load_metadata(self):
-        """Loads metadata from the trajectory file using the reader."""
-        self.metadata = self.reader.read_metadata(self.settings.file_location)
+        self._num_frames: Optional[int] = None  # Cache for number of frames
 
     def load_frame(self, frame_index: int) -> bool:
         """
@@ -77,12 +70,16 @@ class System:
         print(f"Frame {frame_index} not found in trajectory.")
         return False
     
-    def _add_frame_to_cache(self, frame: Frame):
+    def _add_frame_to_cache(self, frame: Frame) -> None:
         """Adds a frame to the cache, managing cache size."""
         if frame.frame_id >= len(self._frame_cache):
             # Extend the cache with None values up to the required index
             self._frame_cache.extend([None] * (frame.frame_id - len(self._frame_cache) + 1))
         self._frame_cache[frame.frame_id] = frame
+
+    def _get_cached_frames(self) -> List[Optional[Frame]]:
+        """ Returns the frames in the cache. """
+        return self._frame_cache
 
 
     def get_frame(self, frame_index: int) -> Optional[Frame]:
@@ -101,24 +98,14 @@ class System:
     def get_num_frames(self) -> int:
         """
         Gets the total number of frames in the trajectory.
-        If the value exist in metadata, it's directly returned.
+        If the value is already calculated, it's directly returned.
         Otherwise, it will be calculated using the method iter_frames.
 
         Returns:
            int: The total number of frames, 0 if an error occurs
         """
-        # First, try to get num_frames from metadata
-        if 'num_frames' in self.metadata:
-            return self.metadata['num_frames']
-
-        # If not in metadata, we have to count by iterating
-        num_frames = 0
-        for _ in self.iter_frames():  # Use iter_frames for efficient counting
-            num_frames += 1
-
-        # Store the result in metadata for future use
-        self.metadata['num_frames'] = num_frames
-        return num_frames
+        # First, check if we already calculated the number of frames
+        return self.reader.get_num_frames(self.settings.file_location)
 
     def iter_frames(self) -> Generator[Frame, None, None]:
         """
@@ -148,8 +135,6 @@ class System:
                 break  # Stop if we've reached the end frame
             yield frame
             counter += 1
-
-        hold = 1
 
 
     def __iter__(self) -> 'System':

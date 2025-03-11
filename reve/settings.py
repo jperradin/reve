@@ -25,12 +25,7 @@ class Settings:
     file_location: str = "./"
     number_of_atoms: int = 0
     range_of_frames: Tuple[int, int] = (0, -1)
-    timestep: Optional[float] = None
-    temperature: Optional[float] = None
-    pressure: Optional[float] = None
-    volume: Optional[float] = None
     quiet: bool = False
-    overwrite_results: bool = False
     analysis: AnalysisSettings = field(default_factory=AnalysisSettings)
 
     @property
@@ -88,45 +83,21 @@ class SettingsBuilder:
         self._settings.set_range_of_frames(start, end)
         return self
 
-    def with_timestep(self, timestep: float):
-        self._settings.timestep = timestep
-        return self
-    
-    def with_temperature(self, temperature: float):
-        self._settings.temperature = temperature
-        return self
-
-    def with_pressure(self, pressure: float):
-        self._settings.pressure = pressure
-        return self
-
-    def with_volume(self, volume: float):
-        self._settings.volume = volume
-        return self
-
     def with_quiet(self, quiet: bool):
         self._settings.quiet = quiet
         return self
 
-    def with_overwrite_results(self, overwrite: bool):
-        self._settings.overwrite_results = overwrite
+    def with_analysis(self, analysis: AnalysisSettings):
+        self._settings.analysis = analysis
         return self
 
-    def with_pdf_settings(self, r_max: Optional[float] = None, bin_width: Optional[float] = None):
-        if r_max is not None:
-            self._settings.analysis.pdf.r_max = r_max
-        if bin_width is not None:
-            self._settings.analysis.pdf.bin_width = bin_width
+    def with_pdf(self, pdf: PDFSettings):
+        self._settings.analysis.pdf = pdf
         return self
 
-    def with_bdf_settings(self, angle_max: Optional[float] = None, bin_width: Optional[float] = None):
-        if angle_max is not None:
-            self._settings.analysis.bdf.angle_max = angle_max
-        if bin_width is not None:
-            self._settings.analysis.bdf.bin_width = bin_width
+    def with_bdf(self, bdf: BDFSettings):
+        self._settings.analysis.bdf = bdf
         return self
-
-    # Add more 'with_' methods for other analysis settings as needed
 
     def build(self) -> Settings:
         return self._settings

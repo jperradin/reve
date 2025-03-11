@@ -1,79 +1,115 @@
-import numpy as np
-from typing import List, TextIO, Tuple, Dict, Optional
 
-from..io.base_reader import BaseReader  
+from typing import Generator, Optional
+from tqdm import tqdm
+import numpy as np
+
+from .base_reader import BaseReader
+from ..core.frame import Frame
+from ..core.atom import Atom
 
 class XYZReader(BaseReader):
-    """Reader for XYZ trajectory files."""
+    """
+    Abstract base class for trajectory readers.  Defines the common interface.
+    """
+    quiet: bool = False
+
     def supports_file_format(self, filename: str) -> bool:
-        return filename.lower().endswith(".xyz")
+        return filename.lower().endswith('.xyz')
 
-    def count_frames(self, filename: str) -> int:
-        with open(filename, 'r') as file:
-            lines = file.readlines()
-        file.close()
+    def read(self, filepath):
+        """
+        Reads the trajectory data from the given file.
 
-        # number of frames = number of comment line
-        comments = [line for line in lines if 'Lattice' in line]
-        return len(comments)
+        Args:
+            filepath: The path to the trajectory file.
 
+        Returns:
+            frames: A list of Frame objects.
+        """
+        return list(self.iter_frames(filepath))
+        
 
-    def _read_header(self, file: TextIO) -> Tuple[int, Dict]:
-        """Reads the XYZ header (num_atoms and comment line)."""
+    def get_num_frames(self, filepath: str) -> int:
+        """
+        Returns the number of frames in the trajectory.
+
+        Returns:
+            int: The number of frames.
+        """
+        num_frames = 0
+        with open(filepath, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                if 'lattice' in line:
+                    num_frames += 1
+        f.close()
+        return num_frames
+
+    def get_frame(self, frame_index) -> Frame:
+        """
+        Retrieves a specific frame from the trajectory.
+
+        Args:
+            frame_index: The index of the frame to retrieve (0-based).
+
+        Returns:
+            Frame: A data structure representing the requested frame.  Should raise an
+            IndexError if the frame_index is out of bounds.
+        """
+        return list(self.iter_frames(filepath))[frame_index]
+
+    def iter_frames(self, filename: str, frame_id: int = 0) -> Generator[Frame, None, None]:
+        """
+        Returns an iterator over the frames in the trajectory.
+        """
         try:
-            num_atoms = int(file.readline())
-            comment = file.readline().strip()
-            lattice = self._get_lattice(comment)  # Get lattice from comment
-            metadata = {"comment": comment, "lattice": lattice, "num_atoms": num_atoms, "num_frames": self.count_frames(file.name)}
-            return num_atoms, metadata
-        except (ValueError, IOError) as e:  # Catch potential errors
-            raise ValueError(f"Invalid XYZ header format: {e}")
+            with open(filename, 'r') as f:
+                while True:  # Keep reading until the file is exhausted.
+                    """ Header is like :
+                    27216
+                    Lattice="65.0 0.0 0.0 0.0 65.0 0.0 0.0 0.0 65.0" Properties=...
+                    """
+                    try:
+                        num_atoms = int(f.readline())
+                    except ValueError:
+                        # End of file or invalid line.  Stop the generator.
+                        break  # Important: Exit the while loop
 
-    def _read_frame_data(self, file: TextIO, num_atoms: int) -> Optional[List[Dict]]:
-        """Reads atom data for a single XYZ frame. Returns None at EOF."""
-        frame_data = []
-        for _ in range(num_atoms):
-            line = file.readline()
-            if not line:  # Explicitly check for EOF *before* splitting
-                return None  # Signal end of file
-            parts = line.split()
-            # Check if we have enough parts *after* splitting, but *before* accessing
-            if len(parts) < 4:
-                return None  # Malformed line (likely EOF or corrupt file)
-            try:
-                symbol = parts[0]
-                x, y, z = map(float, parts[1:4])
-                frame_data.append({"symbol": symbol, "position": np.array([x, y, z], dtype=np.float64)})
-            except (ValueError, IndexError) as e:
-                print(f"Warning: Skipping malformed line in XYZ frame data: {e}")
-                return None
+                    comment = f.readline().strip()  # Read and discard the comment line.
+                    # Extract lattice in header
+                    lattice = comment.split('\"')[1]
+                    l = np.array(lattice.split(), dtype=float)
+                    lx = np.array([l[0],l[1], l[2]])
+                    ly = np.array([l[3],l[4], l[5]])
+                    lz = np.array([l[6],l[7], l[8]])
+                    lattice = np.array([lx, ly, lz])
 
-        return frame_data
+                    atoms = []
+                    for i in range(num_atoms):
+                        # Read lines in file
+                        line = f.readline().strip()
+                        if not line:  # Check for unexpected EOF within a frame
+                            raise ValueError("Unexpected end of file within a frame.")
+                        parts = line.split()
+                        
+                        # Create Atom
+                        symbol, x, y, z = parts[0], float(parts[1]), float(parts[2]), float(parts[3])
+                        atom = Atom(atom_id=i, symbol=symbol, position=np.array([x, y, z]))
+                        if len(parts) > 4:
+                            atom.other = parts[4:]
+                        atoms.append(atom)
+                    
+                    # Create frame and yield it
+                    frame = Frame(frame_id=frame_id, atoms=atoms, lattice=lattice)
+                    yield frame
+                    frame_id += 1
 
+        except FileNotFoundError:
+            print(f"Error: File '{filename}' not found.")
+            # You might choose to raise the exception here or return an empty generator.
+            # Raising is generally preferred, as it clearly signals an error.
+            return  # or `raise`
 
-    def _read_footer(self, file: TextIO) -> Dict:
-        """XYZ files typically don't have footers."""
-        return {}
-
-    def _get_lattice(self, comment: str) -> Optional[np.ndarray]:
-        """Extracts the lattice matrix from the XYZ comment line, if present."""
-        try:
-            # Find the Lattice parameter in the comment
-            if "Lattice=" not in comment:
-                return None  # Or np.eye(3) if you want a default
-
-            # Extract the quoted part
-            parts = comment.split('Lattice="')[1].split('"')[0]
-
-            # Split the string into 9 values
-            values = list(map(float, parts.split()))
-
-            # Check if we have exactly 9 values for a 3x3 matrix
-            if len(values) != 9:
-                return None # Or raise an exception
-
-            # Create the 3x3 lattice matrix
-            return np.array(values).reshape((3, 3))
-
-        except (IndexError, ValueError):
-            return None  # Or raise an exception
+        except ValueError as e:
+            print(f"Error: Invalid XYZ file format: {e}")
+            return # or `raise`

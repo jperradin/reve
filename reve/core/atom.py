@@ -1,6 +1,6 @@
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, List
 
 from ..utils.constants import ATOMIC_MASSES, CORRELATION_LENGTH
 from ..utils.geometry import wrap_position
@@ -25,9 +25,12 @@ class Atom:
     symbol: str
     atom_id: int
     position: np.ndarray = field(compare=False, repr=False)
+    parent: Optional['Atom'] = field(default=None, compare=False, repr=False)
+    neighbors: List['Atom'] = field(default_factory=list, compare=False, repr=False)
     velocity: Optional[np.ndarray] = field(default=None, compare=False, repr=False)
     mass: Optional[float] = field(default=None, compare=True, repr=True)
     correlation_length: Optional[float] = field(default=None, compare=True, repr=True)
+    other: Optional[List[str]] = field(default=None, compare=False, repr=False)
 
     _next_id = 0
 
@@ -49,6 +52,15 @@ class Atom:
 
         if self.correlation_length is None:
             object.__setattr__(self, 'correlation_length', CORRELATION_LENGTH.get(self.symbol, 0.0))
+
+        if self.other is None:
+            object.__setattr__(self, 'other', [])
+
+        if self.neighbors is None:
+            object.__setattr__(self, 'neighbors', [])
+
+        if self.parent is None:
+            object.__setattr__(self, 'parent', self)
 
     @staticmethod
     def wrap_position(position: np.ndarray, lattice: np.ndarray) -> np.ndarray:
