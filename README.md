@@ -20,13 +20,13 @@ conda deactivate
 
 Create a virtual environment
 ```bash
+cd reve
 python -m venv venv
 source venv/bin/activate
 ```
 
 Install the package and dependencies
 ```bash
-cd reve
 pip install -e .
 ```
 
