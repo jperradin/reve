@@ -1,6 +1,6 @@
 # Reve package
 
-Reve is a Python package for analyzing trajectories of atomic systems, such as molecules or crystals, in a periodic space.
+Reve is a Python package for analyzing trajectories of atomic systems in a periodic space.
 
 ## Installation
 
