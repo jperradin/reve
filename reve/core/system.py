@@ -1,10 +1,10 @@
 import numpy as np
-from typing import List, Optional, Dict, Generator
+from typing import List, Optional, Generator
 from tqdm import tqdm
 
-from reve.io.base_reader import BaseReader
-from reve.core.frame import Frame
-from reve.settings import Settings  # Import the Settings class
+from ..io.reader.base_reader import BaseReader
+from .frame import Frame
+from ..config.settings import Settings  # Import the Settings class
 
 
 class System:

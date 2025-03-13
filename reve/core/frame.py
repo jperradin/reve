@@ -46,6 +46,10 @@ class Frame:
 
         self.lattice = lattice
 
+    def get_lattice(self) -> Optional[np.ndarray]:
+        """ Get the lattice of the frame """
+        return self.lattice
+
     def get_unique_elements(self) -> List[str]:
         """ Get the unique elements in the frame """
         return np.unique([atom.symbol for atom in self.atoms])

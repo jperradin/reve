@@ -4,3 +4,4 @@ my_tests.py
 __pycache__
 reve-1/
 .vscode/
+reve.egg-info/
