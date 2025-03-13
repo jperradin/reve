@@ -25,8 +25,8 @@ config_pdf = c.PDFSettings(
 # BAD settings
 config_bad = c.BADSettings(
     run=True,               # Set True to run BAD analysis
-    angle_max=12.0,         # Maximum angle
-    bin_width=0.025         # Width of each bin
+    angle_max=180.0,        # Maximum angle
+    bin_width=1.0           # Width of each bin
 )
 
 # Analysis settings

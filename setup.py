@@ -34,6 +34,7 @@ setup(
         "numba>=0.53.0",
         "matplotlib>=3.4.0",
         "tqdm>=4.60.0",
+        "scipy>=1.10.0"
     ],
     entry_points={
         "console_scripts": [

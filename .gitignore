@@ -5,3 +5,4 @@ __pycache__
 reve-1/
 .vscode/
 reve.egg-info/
+venv/
