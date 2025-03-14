@@ -29,6 +29,7 @@ class BADSettings:
     angle_max: float = 180.0
     bin_width: float = 1.0
 
+
 @dataclass
 class AnalysisSettings:
     """ 
@@ -41,6 +42,18 @@ class AnalysisSettings:
     pdf: PDFSettings = field(default_factory=PDFSettings)
     bdf: BADSettings = field(default_factory=BADSettings)
     # TODO: Add other analysis settings here
+
+    def __str__(self) -> str:
+        lines = []
+        for key, value in self.__dict__.items():
+            if value is not None:
+                lines.append(f"\t\t|- {value}")
+        output = '''
+        Analysis Settings:
+        -----------------
+{}
+        '''.format('\n'.join(lines))
+        return output
 
 @dataclass
 class LatticeSettings:
@@ -62,6 +75,28 @@ class LatticeSettings:
     get_lattice_from_file: bool = False
     lattice_file_location: str = "./"
     apply_lattice_to_all_frames: bool = True
+
+    def __str__(self) -> str:
+        if not self.apply_custom_lattice:
+            return ""
+        lines = []
+        for key, value in self.__dict__.items():
+            if value is not None:
+                if key == "custom_lattice":
+                    line1 = f"\t\t|- {key}:"
+                    lx = np.array2string(value[0], separator=', ', formatter={'float_kind': lambda x: f'{x}'})
+                    ly = np.array2string(value[1], separator=', ', formatter={'float_kind': lambda x: f'{x}'})
+                    lz = np.array2string(value[2], separator=', ', formatter={'float_kind': lambda x: f'{x}'})
+                    lines.append(f"{line1}\n\t\t\tlx = {lx}\n\t\t\tly = {ly}\n\t\t\tlz = {lz}")
+                else:
+                    lines.append(f"\t\t|- {key}: {value}")
+        output = '''
+
+        Lattice Settings:
+        -----------------
+{}
+        '''.format('\n'.join(lines))
+        return output
 
 @dataclass
 class Settings:
@@ -92,16 +127,17 @@ class Settings:
         lines = []
         for key, value in self.__dict__.items():
             if value is not None:
-                if key == 'analysis':
-                    for analysis_type, analysis_settings in value.__dict__.items():
-                        for setting_key, setting_value in analysis_settings.__dict__.items():
-                            if setting_value is not None:
-                                lines.append(f"\t|- {analysis_type} {setting_key}: {setting_value}")
+                if key == 'lattice' and not self.lattice.apply_custom_lattice:
+                    continue
+                elif key == 'lattice' and self.lattice.apply_custom_lattice:
+                    lines.append(f"\t{str(self.lattice)}")
+                elif key == 'analysis':
+                    lines.append(f"\t{str(self.analysis)}")
                 else:
                     lines.append(f"\t|- {key}: {value}")
         output = '''
-        Settings:
-        ---------
+        Global Settings:
+        ----------------
 {}
         '''.format('\n'.join(lines))
         return output

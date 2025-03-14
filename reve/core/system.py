@@ -105,6 +105,8 @@ class System:
            int: The total number of frames, 0 if an error occurs
         """
         # First, check if we already calculated the number of frames
+        if self._num_frames is not None:
+            return self._num_frames
         return self.reader.get_num_frames(self.settings.file_location)
 
     def iter_frames(self) -> Generator[Frame, None, None]:

@@ -1,4 +1,6 @@
 from tqdm import tqdm
+import numpy as np
+import os
 
 from .config.settings import Settings
 from .io.reader.reader_factory import ReaderFactory
@@ -25,11 +27,11 @@ def main(settings: Settings):
     progress_bar_kwargs = {
         "disable": not settings.verbose,
         "leave": True,
-        "ncols": 10000
+        "ncols": os.get_terminal_size().columns,
+        "colour": "green"
     }
 
-
-    progress_bar = tqdm(enumerate(system.iter_frames()), desc="Parsing frames", unit="frame", **progress_bar_kwargs)
+    progress_bar = tqdm(enumerate(system.iter_frames()), total=total, desc="Parsing frames", unit="frame", **progress_bar_kwargs)
     for i, frame in progress_bar:
         if settings.lattice.apply_custom_lattice:
             frame.set_lattice(settings.lattice.custom_lattice)
@@ -47,6 +49,6 @@ def main(settings: Settings):
         atom2 = frame.get_atom_by_id(k)
         atom3 = frame.get_atom_by_id(l)
         
-        print(f"Frame {i}: angle {atom1.symbol} - {atom2.symbol} - {atom3.symbol} is {pbc_angle:.2f}")
-        print(f"Frame {i}: angle {atom1.symbol} - {atom2.symbol} - {atom3.symbol} is {dir_angle:.2f}")
+        # print(f"Frame {i}: angle {atom1.symbol} - {atom2.symbol} - {atom3.symbol} is {pbc_angle:.2f}")
+        # print(f"Frame {i}: angle {atom1.symbol} - {atom2.symbol} - {atom3.symbol} is {dir_angle:.2f}")
 

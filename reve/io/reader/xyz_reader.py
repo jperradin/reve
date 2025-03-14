@@ -39,7 +39,7 @@ class XYZReader(BaseReader):
         with open(filepath, 'r') as f:
             lines = f.readlines()
             for line in lines:
-                if 'lattice' in line:
+                if 'Lattice' in line:
                     num_frames += 1
         f.close()
         return num_frames

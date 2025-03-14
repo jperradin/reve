@@ -6,7 +6,7 @@ import numpy as np
 
 # Lattice settings
 config_lattice = c.LatticeSettings(
-    apply_custom_lattice=False,                      # If False, read lattice from trajectory file
+    apply_custom_lattice=True,                      # If False, read lattice from trajectory file
     custom_lattice=np.array([[66.2574, 0.0, 0.0],     # Put a custom lattice here or None
                              [0.0, 66.2574, 0.0],     # lattice values MUST be float.
                              [0.0, 0.0, 66.2574]]), 
@@ -45,7 +45,7 @@ settings = (SettingsBuilder() \
     .with_file_location(path)          # Path to the trajectory file \
     .with_number_of_atoms(27216)       # Number of atoms in the trajectory \
     .with_range_of_frames(0, -1)       # Range of frames to process (0 to -1 = all frames) \
-    .with_verbose(False)               # Whether to print settings, progress bars and other information (True = print) \
+    .with_verbose(True)               # Whether to print settings, progress bars and other information (True = print) \
     .with_lattice(config_lattice)      # Lattice settings \
     .with_analysis(config_analysis)    # Analysis settings \
 
