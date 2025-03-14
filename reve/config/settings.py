@@ -106,6 +106,7 @@ class Settings:
     file_location: str = "./"
     number_of_atoms: int = 0
     range_of_frames: Tuple[int, int] = (0, -1)
+    timestep: float = 0.0
     verbose: bool = False
     lattice: LatticeSettings = field(default_factory=LatticeSettings) # TODO: implement lattice fetcher from file
     # analysis: AnalysisSettings = field(default_factory=AnalysisSettings) # TODO: implement analyzer first
@@ -164,6 +165,10 @@ class SettingsBuilder:
 
     def with_range_of_frames(self, start: int, end: Optional[int] = None):
         self._settings.set_range_of_frames(start, end)
+        return self
+
+    def with_timestep(self, timestep: float):
+        self._settings.timestep = timestep
         return self
 
     def with_lattice(self, lattice: LatticeSettings):
