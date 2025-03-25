@@ -31,23 +31,13 @@ def main(settings: Settings):
         "colour": "green"
     }
 
-    progress_bar = tqdm(enumerate(system.iter_frames()), total=total, desc="Parsing frames", unit="frame", **progress_bar_kwargs)
-    for i, frame in progress_bar:
-        if settings.lattice.apply_custom_lattice:
-            frame.set_lattice(settings.lattice.custom_lattice)
-        wpositions = frame.get_wrapped_positions()
-        j = 22023
-        k = 1500
-        l = 22398
-        p1 = wpositions[j]
-        p2 = wpositions[k]
-        p3 = wpositions[l]
-        pbc_angle = geometry.calculate_pbc_angle(p1, p2, p3, frame.get_lattice())
-        dir_angle = geometry.calculate_direct_angle(p1, p2, p3)
-
-        atom1 = frame.get_atom_by_id(j)
-        atom2 = frame.get_atom_by_id(k)
-        atom3 = frame.get_atom_by_id(l)
+    # progress_bar = tqdm(enumerate(system.iter_frames()), total=total, desc="Parsing frames", unit="frame", **progress_bar_kwargs)
+    # for i, frame in progress_bar:
+    #     if settings.lattice.apply_custom_lattice:
+    #         frame.set_lattice(settings.lattice.custom_lattice)
+    #     # frame.initialize_atoms()
+    #     # wpositions = frame.get_wrapped_positions()
+    #     pass
         
         # print(f"Frame {i}: angle {atom1.symbol} - {atom2.symbol} - {atom3.symbol} is {pbc_angle:.2f}")
         # print(f"Frame {i}: angle {atom1.symbol} - {atom2.symbol} - {atom3.symbol} is {dir_angle:.2f}")

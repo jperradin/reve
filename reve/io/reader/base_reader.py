@@ -1,71 +1,62 @@
 from abc import ABC, abstractmethod
-from typing import Generator, List
+from typing import Generator, List, Optional
 
 from ...core.frame import Frame
 
 class BaseReader(ABC):
-    """
-    Abstract base class for trajectory readers.  Defines the common interface.
-    """
-    verbose: bool = True
+    def __init__(self) -> None:
+        self.verbose: bool = True
+        self.filename: str = ""
+        self.num_frames: int = 0
+        self.frame_offsets: List[int] = [] # byte offset of each frame
+        self.frame_sizes: List[int] = [] # byte size of each frame
+        self.mmaped_file: Optional[memoryview] = None # Mapped file
+        self.is_indexed: bool = False # True if the file is indexed 
 
     def set_verbose(self, verbose: bool) -> None:
         self.verbose = verbose
 
-    @abstractmethod
-    def supports_file_format(self, filename: str) -> bool:
+    def seek_to_line(self, offset: int) -> None:
         """
-        Checks if the reader supports the given file format.
+        Seeks to the specified frame.
 
         Args:
-            filename: The path to the file.
+            offset (int): The byte offset to seek to.
+        """
+        with open(self.filename, 'r') as f:
+            while offset > 0:
+                f.readline()
+                offset -= 1
+            return f.tell()
+
+    @abstractmethod
+    def detect(self, filepath: str) -> bool:
+        """
+        Detects if the file is supported by this reader.
 
         Returns:
-            bool: True if the reader supports the file format, False otherwise.
+            bool: True if the file is supported, False otherwise.
         """
         pass
 
     @abstractmethod
-    def read(self, filepath) -> List[Frame]:
+    def scan(self) -> List[Frame]:
         """
-        Reads the trajectory data from the given file.
-
-        Args:
-            filepath: The path to the trajectory file.
+        Scans the trajectory file.
+        Initializes Frame objects with the chunk locations of each frame.
+        Parse the header to store the number of atoms, the lattice and other informations.
 
         Returns:
-            frames: A list of Frame objects.
+            List[Frame]: A list of Frame objects.
         """
         pass
 
     @abstractmethod
-    def get_num_frames(self) -> int:
+    def parse(self) -> Generator[Frame, None, None]:
         """
-        Returns the number of frames in the trajectory.
+        Parses the trajectory file and yields frames.
 
-        Returns:
-            int: The number of frames.
+        Yields:
+            Frame: A data structure representing a frame.
         """
         pass
-
-    @abstractmethod
-    def get_frame(self, frame_index) -> Frame:
-        """
-        Retrieves a specific frame from the trajectory.
-
-        Args:
-            frame_index: The index of the frame to retrieve (0-based).
-
-        Returns:
-            Frame: A data structure representing the requested frame.  Should raise an
-            IndexError if the frame_index is out of bounds.
-        """
-        pass
-
-    @abstractmethod
-    def iter_frames(self, filename: str, frame_id: int = 0) -> Generator[Frame, None, None]:
-        """
-        Returns an iterator over the frames in the trajectory.
-        """
-        pass
-    

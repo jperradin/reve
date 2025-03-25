@@ -1,114 +1,134 @@
-
-from typing import Generator
+from typing import List, Generator
+from collections import namedtuple
 import numpy as np
+import os
 
 from .base_reader import BaseReader
 from ...core.frame import Frame
 from ...core.atom import Atom
 
+FrameIndex = namedtuple('FrameIndex', ['frame_id', 'num_atoms', 'lattice', 'byte_offset'])
+
 class XYZReader(BaseReader):
     """
-    Abstract base class for trajectory readers.  Defines the common interface.
+    Reader for XYZ trajectory files.
     """
-    verbose: bool = True
 
-    def supports_file_format(self, filename: str) -> bool:
-        return filename.lower().endswith('.xyz')
-
-    def read(self, filepath):
+    def detect(self, filepath: str) -> bool:
         """
-        Reads the trajectory data from the given file.
-
-        Args:
-            filepath: The path to the trajectory file.
+        Detects if the file is supported by this reader.
 
         Returns:
-            frames: A list of Frame objects.
+            bool: True if the file is supported, False otherwise.
         """
-        return list(self.iter_frames(filepath))
-        
+        return filepath.lower().endswith('.xyz')
 
-    def get_num_frames(self, filepath: str) -> int:
+    def scan(self) -> List[FrameIndex]:
         """
-        Returns the number of frames in the trajectory.
-
-        Returns:
-            int: The number of frames.
-        """
-        num_frames = 0
-        with open(filepath, 'r') as f:
-            lines = f.readlines()
-            for line in lines:
-                if 'Lattice' in line:
-                    num_frames += 1
-        f.close()
-        return num_frames
-
-    def get_frame(self, frame_index) -> Frame:
-        """
-        Retrieves a specific frame from the trajectory.
-
-        Args:
-            frame_index: The index of the frame to retrieve (0-based).
+        Scans the trajectory file.
+        Initializes Frame objects with the chunk locations of each frame.
+        Parse the header to store the number of atoms, the lattice and other informations.
 
         Returns:
-            Frame: A data structure representing the requested frame.  Should raise an
-            IndexError if the frame_index is out of bounds.
+            List[FrameIndex]: A list of FrameIndex objects.
         """
-        return list(self.iter_frames(filepath))[frame_index]
+        if not self.mmaped_file:
+            with open(self.filename, 'rb') as f:
+                self.mmaped_file = memoryview(f.read())
+        self.frame_offsets = []
+        self.frame_sizes = []
+        self.num_frames = 0
+        self.frame_indices = []
 
-    def iter_frames(self, filename: str, frame_id: int = 0) -> Generator[Frame, None, None]:
-        """
-        Returns an iterator over the frames in the trajectory.
-        """
         try:
-            with open(filename, 'r') as f:
-                while True:  # Keep reading until the file is exhausted.
-                    """ Header is like :
-                    27216
-                    Lattice="65.0 0.0 0.0 0.0 65.0 0.0 0.0 0.0 65.0" Properties=...
-                    """
+            file_size = os.path.getsize(self.filename)
+            with open(self.filename, 'r') as f:
+                offset = 0
+                while offset < file_size:
+                    # Store position at the start of the frame
+                    frame_start = offset
+
+                    # Read number of atoms line
+                    num_atoms_line = f.readline().strip()
+                    if not num_atoms_line:
+                        break # End of file
                     try:
-                        num_atoms = int(f.readline())
+                        num_atoms = int(num_atoms_line)
                     except ValueError:
-                        # End of file or invalid line.  Stop the generator.
-                        break  # Important: Exit the while loop
+                        raise ValueError("Number of atoms must be an integer")
+                    offset += 1
 
-                    comment = f.readline().strip()  # Read and discard the comment line.
-                    # Extract lattice in header
-                    lattice = comment.split('\"')[1]
-                    l = np.array(lattice.split(), dtype=float)
-                    lx = np.array([l[0],l[1], l[2]])
-                    ly = np.array([l[3],l[4], l[5]])
-                    lz = np.array([l[6],l[7], l[8]])
-                    lattice = np.array([lx, ly, lz])
+                    # Read lattice line
+                    lattice_line = f.readline().strip()
+                    try:
+                        lattice_line = lattice_line.split('\"')[1]
+                        lattice_line = lattice_line.split()
+                        lxx, lxy, lxz = float(lattice_line[0]), float(lattice_line[1]), float(lattice_line[2])
+                        lyx, lyy, lyz = float(lattice_line[3]), float(lattice_line[4]), float(lattice_line[5])
+                        lzx, lzy, lzz = float(lattice_line[6]), float(lattice_line[7]), float(lattice_line[8])
+                        lattice = np.array([[lxx, lxy, lxz], [lyx, lyy, lyz], [lzx, lzy, lzz]])
+                    except ValueError:
+                        raise ValueError("Lattice must be a 3x3 matrix")
+                    offset += 1
 
-                    atoms = []
-                    for i in range(num_atoms):
-                        # Read lines in file
-                        line = f.readline().strip()
-                        if not line:  # Check for unexpected EOF within a frame
-                            raise ValueError("Unexpected end of file within a frame.")
-                        parts = line.split()
-                        
-                        # Create Atom
-                        symbol, x, y, z = parts[0], float(parts[1]), float(parts[2]), float(parts[3])
-                        atom = Atom(atom_id=i, symbol=symbol, position=np.array([x, y, z]))
-                        if len(parts) > 4:
-                            atom.other = parts[4:]
-                        atoms.append(atom)
+                    # Read atom lines
+                    for _ in range(num_atoms):
+                        l = f.readline()
+                        offset += 1
                     
-                    # Create frame and yield it
-                    frame = Frame(frame_id=frame_id, atoms=atoms, lattice=lattice)
-                    yield frame
-                    frame_id += 1
+                    # Store position at the end of the frame
+                    self.frame_indices.append(FrameIndex(frame_id=self.num_frames, num_atoms=num_atoms, lattice=lattice, byte_offset=frame_start))
+                    self.num_frames += 1
+                    self.frame_sizes.append(offset - frame_start)
+                    self.frame_offsets.append(frame_start)
 
-        except FileNotFoundError:
-            print(f"Error: File '{filename}' not found.")
-            # You might choose to raise the exception here or return an empty generator.
-            # Raising is generally preferred, as it clearly signals an error.
-            return  # or `raise`
+        except Exception as e:
+            raise Exception(f"Error scanning trajectory file: {str(e)}")
 
-        except ValueError as e:
-            print(f"Error: Invalid XYZ file format: {e}")
-            return # or `raise`
+        if self.verbose:
+            print(f"Scanned {self.num_frames} frames in {self.filename}")
+
+        self.is_indexed = True
+        return self.frame_indices
+
+    def parse(self, frame_id: int) -> Generator[Frame, None, None]:
+        """
+        Parses the trajectory file, get atom data and yields frames.
+
+        Yields:
+            Frame: A data structure representing a frame.
+        """
+        
+        frame_index = self.frame_indices[frame_id]
+        with open(self.filename, 'r') as f:
+            self.seek_to_line(frame_index.byte_offset) 
+            num_atoms = frame_index.num_atoms
+            lattice = frame_index.lattice
+
+            # Skip 2 header lines
+            f.readline()
+            f.readline()
+
+            symbols = []
+            positions = []
+            # Read atom lines
+            for _ in range(num_atoms):
+                atom_line = f.readline().strip()
+                try:
+                    parts = atom_line.split()
+                    symbol = parts[0]
+                    x, y, z = map(float, parts[1:])
+                    symbols.append(symbol)
+                    positions.append(np.array([x, y, z]))
+                except ValueError:
+                    raise ValueError("Atom line must have 4 values: symbol, x, y, z")
+
+            data = {
+                'symbol': symbols,
+                'position': positions
+            }
+            
+            yield Frame(frame_id=frame_id, _data=data, lattice=lattice, atoms=[])
+                
+                
+

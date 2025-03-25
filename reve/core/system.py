@@ -28,9 +28,15 @@ class System:
         self.reader: BaseReader = reader
         self.settings: Settings = settings
         self.current_frame: Optional[Frame] = None
-        self._frame_cache: List[Optional[Frame]] = []  # Cache for faster frame access.
         self._current_frame_index: Optional[int] = None # Index of the current frame
         self._num_frames: Optional[int] = None  # Cache for number of frames
+        
+        # Set the filename in the reader
+        self.reader.filename = self.settings.file_location
+        
+        # Scan the file to initialize the reader
+        if hasattr(self.reader, 'scan'):
+            self.reader.scan()
 
     def load_frame(self, frame_index: int) -> bool:
         """
@@ -52,34 +58,21 @@ class System:
             print(f"Frame index {frame_index} is out of range specified in settings ({start_frame}-{end_frame}).")
             return False
 
-
-        # Check if the frame is in the cache
-        if 0 <= frame_index < len(self._frame_cache) and self._frame_cache[frame_index] is not None:
-            self.current_frame = self._frame_cache[frame_index]
-            self._current_frame_index = frame_index
-            return True
-
-        #If not in cache, we use the iterator.
-        for frame in self.iter_frames():
-            if frame.frame_id == frame_index:
+        # Use the parse method to get the frame
+        if hasattr(self.reader, 'parse'):
+            try:
+                # Get the frame using the parse method
+                frame_generator = self.reader.parse(frame_index)
+                frame = next(frame_generator)
                 self.current_frame = frame
                 self._current_frame_index = frame_index
-                self._add_frame_to_cache(frame) # Add the frame to the cache.
                 return True
-
+            except (StopIteration, IndexError, ValueError) as e:
+                print(f"Error loading frame {frame_index}: {str(e)}")
+                return False
+        
         print(f"Frame {frame_index} not found in trajectory.")
         return False
-    
-    def _add_frame_to_cache(self, frame: Frame) -> None:
-        """Adds a frame to the cache, managing cache size."""
-        if frame.frame_id >= len(self._frame_cache):
-            # Extend the cache with None values up to the required index
-            self._frame_cache.extend([None] * (frame.frame_id - len(self._frame_cache) + 1))
-        self._frame_cache[frame.frame_id] = frame
-
-    def _get_cached_frames(self) -> List[Optional[Frame]]:
-        """ Returns the frames in the cache. """
-        return self._frame_cache
 
 
     def get_frame(self, frame_index: int) -> Optional[Frame]:
@@ -99,7 +92,6 @@ class System:
         """
         Gets the total number of frames in the trajectory.
         If the value is already calculated, it's directly returned.
-        Otherwise, it will be calculated using the method iter_frames.
 
         Returns:
            int: The total number of frames, 0 if an error occurs
@@ -107,7 +99,18 @@ class System:
         # First, check if we already calculated the number of frames
         if self._num_frames is not None:
             return self._num_frames
-        return self.reader.get_num_frames(self.settings.file_location)
+        
+        # Use the reader's num_frames attribute if available
+        if hasattr(self.reader, 'num_frames') and self.reader.num_frames > 0:
+            self._num_frames = self.reader.num_frames
+            return self._num_frames
+            
+        # Otherwise, count frames by iterating through them
+        count = 0
+        for _ in self.iter_frames():
+            count += 1
+        self._num_frames = count
+        return count
 
     def iter_frames(self) -> Generator[Frame, None, None]:
         """
@@ -119,24 +122,24 @@ class System:
             Frame: The next Frame object in the trajectory.
         """
         start_frame, end_frame = self.settings.range_of_frames
-        # Use the reader's iterator to avoid loading everything into memory.
-        frame_generator = self.reader.iter_frames(self.settings.file_location)
-
-        # Skip initial frames if start_frame > 0
-        for _ in range(start_frame):
-            try:
-                next(frame_generator) # Consume frames, and increment frame_id
-            except StopIteration:
-                return # Stop if the file has fewer frames than start_frame
-            
-
-        # Yield frames within the specified range
-        counter = 0
-        for frame_id, frame in enumerate(frame_generator, start=start_frame):
-            if end_frame != -1 and frame_id > end_frame:
-                break  # Stop if we've reached the end frame
-            yield frame
-            counter += 1
+        
+        # If the reader has frame_indices, use them to iterate through frames
+        if hasattr(self.reader, 'frame_indices') and self.reader.frame_indices:
+            for frame_id in range(start_frame, min(end_frame + 1 if end_frame != -1 else float('inf'), len(self.reader.frame_indices))):
+                try:
+                    frame_generator = self.reader.parse(frame_id)
+                    frame = next(frame_generator)
+                    yield frame
+                except (StopIteration, IndexError, ValueError) as e:
+                    print(f"Error loading frame {frame_id}: {str(e)}")
+                    continue
+        else:
+            # Fallback to loading frames one by one
+            for frame_id in range(start_frame, end_frame + 1 if end_frame != -1 else float('inf')):
+                if self.load_frame(frame_id):
+                    yield self.current_frame  # type: ignore
+                else:
+                    break  # Stop if we can't load a frame
 
 
     def __iter__(self) -> 'System':

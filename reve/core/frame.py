@@ -16,12 +16,15 @@ class Frame:
         Id of the frame
     atoms : List[Atom]
         List of atoms in the frame
-    lattice : Optional[np.ndarray]
+    lattice : np.ndarray
         Lattice of the frame
+    _data : Dict[str, np.ndarray]
+        Internal data structure for atom data (symbol, position)
     """
     frame_id: int
     atoms: List[Atom]
-    lattice: Optional[np.ndarray] = None 
+    lattice: np.ndarray
+    _data: Dict[str, np.ndarray]
 
     def __post_init__(self):
         """ Initialisation after object creation """
@@ -30,10 +33,19 @@ class Frame:
         if self.lattice is not None and not isinstance(self.lattice, np.ndarray):
             raise TypeError("lattice must be a numpy array")
         
-    def add_atom(self, atom: Atom) -> None:
-        """ Add an Atom object to the list of atoms in the frame """
-        self.atoms.append(atom)
-
+    def initialize_atoms(self) -> None:
+        """ Initialize the list of atoms in the frame """
+        id = 0
+        symbols = self._data['symbol']
+        positions = self._data['position']
+        
+        if len(symbols) != len(positions):
+            raise ValueError("symbols and positions must have the same length")
+        
+        for symbol, position in zip(symbols, positions):
+            self.atoms.append(Atom(atom_id=id, symbol=symbol, position=position))
+            id += 1
+        
     def set_lattice(self, lattice: np.ndarray) -> None:
         """ Set the lattice of the frame """
         if lattice.shape != (3, 3):

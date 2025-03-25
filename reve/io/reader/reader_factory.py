@@ -17,7 +17,7 @@ class ReaderFactory:
         """Registers a new reader instance."""
         # Use a dummy filename with the correct extension to determine support
         for ext in ['.xyz', '.lammpstrj', '.other']: #add your extensions here.
-            if reader.supports_file_format(f'dummy{ext}'):
+            if reader.detect(f'dummy{ext}'):
                 self._readers[ext] = reader
                 break
 
@@ -25,6 +25,6 @@ class ReaderFactory:
     def get_reader(self, filename: str) -> Optional[BaseReader]:
         """Returns the appropriate reader for a given file."""
         for extension, reader in self._readers.items():
-            if reader.supports_file_format(filename):
+            if reader.detect(filename):
                 return reader
         return None
