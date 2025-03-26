@@ -7,3 +7,4 @@ reve-1/
 reve.egg-info/
 venv/
 tests/input-10000_frames.lammpstrj
+tests/input-10000_frames.xyz
