@@ -16,8 +16,8 @@ __version__ ➜  2.0.4
         General Settings:
         ----------------
 	|- project_name: example-SiO2
-	|- export_directory: ./examples/inputs/example-SiO2
-	|- file_location: ./examples/inputs/example-SiO2.xyz
+	|- export_directory: ./examples/outputs/example-SiO2
+	|- file_location: ./examples/inputs/example-SiO2-1008at.xyz
 	|- range_of_frames: (0, 0)
 	|- apply_pbc: True
 	|- verbose: True

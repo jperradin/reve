@@ -7,40 +7,292 @@ from ...utils.aesthetics import remove_duplicate_lines
 import numpy as np
 import os
 from datetime import datetime
+from numba import njit, prange
+from tqdm import tqdm
+from dataclasses import dataclass, field
+from itertools import combinations
+
+
+@dataclass
+class QVectors:
+    """Holds reciprocal spaces q-vectors and their binning informations."""
+
+    qx: np.ndarray
+    qy: np.ndarray
+    qz: np.ndarray
+    q_norm: np.ndarray  # 3D array of q-vector magnitudes
+    q_bins: np.ndarray  # 1D array of q-bin edges
+
+
+@dataclass
+class SpeciesComponents:
+    """Holds the intermediate sin/cos components for each atomic species."""
+
+    qcos: dict[str, np.ndarray]
+    qsin: dict[str, np.ndarray]
+    correlation_lengths: dict[str, float]
+
+
+class _NumbaProgressProxy:
+    """A proxy to allow updating a tqdm progress bar from within a Numba JIT function."""
+
+    def __init__(self, pbar) -> None:
+        self.pbar = pbar
+
+    def update(self, n):
+        self.pbar.update(n)
 
 
 class NeutronStructureFactorAnalyzer(BaseAnalyzer):
     """
-    Computes the neutron structure factor for each pair of atoms
+    Computes the neutron structure factor for each pair of atoms.
     """
 
     def __init__(self, settings: Settings) -> None:
-        """Initializes the analyzer."""
         super().__init__(settings)
+        self.q = None
+        self.nsf = None
+        self._atoms_data = None
 
     def analyze(self, frame: Frame) -> None:
-        return super().analyze(frame)
+        self._atoms_data = frame.get_wrapped_positions_by_element()
+        pairs = self._get_pairs(self._atoms_data.keys())
+        self.calculate_neutron_structure_factor(pairs, frame)
 
     def finalize(self) -> None:
         return super().finalize()
 
     def get_result(self) -> Dict[str, float]:
-        return super().get_result()
+        return self.nsf
 
     def print_to_file(self) -> None:
-        return super().print_to_file()
+        if self.nsf is None:
+            return
+        output_path = os.path.join(
+            self._settings.export_directory, "neutron_structure_factor.dat"
+        )
+        with open(output_path, "w") as f:
+            header = "q\t" + "\t".join(self.nsf.keys()) + "\n"
+            f.write(header)
+            for i in range(len(self.q)):
+                line = f"{self.q[i]}"
+                for key in self.nsf.keys():
+                    line += f"\t{self.nsf[key][i]}"
+                f.write(line + "\n")
 
-    def _initialize_q_vectors(
-        self, q_max: float = 10.0, q_step_scale: float = 6.0
-    ) -> Dict:
+    def _get_pairs(self, species: List[str]) -> List[str]:
+        pairs = [f"{s1}-{s2}" for s1, s2 in combinations(species, 2)]
+        for s in species:
+            pairs.append(f"{s}-{s}")
+        pairs.append("total")
+        return pairs
+
+    def calculate_neutron_structure_factor(
+        self, pairs: list[str], frame: Frame
+    ) -> None:
         """
-        Generate reciprocal space q-vectors.
+        Calculate the neutron structure factor of the system by orchestrating
+        calls to helper methods.
 
         Args:
-            q_max (float): Maximum magnitude for q-vectors. (less than half of the lattice dimension)
-            q_step_scale (float): Scaling factor to determine the density of q-points.
+            pairs (list[str]): A list of species pairs to analyze (e.g., ["a-a", "a-b", "total"]).
+        """
+        # 1. Generate q-vectors based on box dimensions
+        q_vectors = self._generate_q_vectors(frame, q_max=10.0)
+
+        # 2. Calculate cosine and sine components for each atomic species
+        components = self._calculate_species_components(q_vectors)
+
+        # 3. Calculate partial and total structure factors (unbinned)
+        f_unbinned = self._calculate_all_partial_factors(pairs, components)
+
+        # 4. Bin the structure factor results into a histogram using a vectorized approach
+        structure_factor_binned = self._bin_structure_factor(f_unbinned, q_vectors)
+
+        # 5. Store final results
+        self.q = structure_factor_binned.pop("q")
+        self.nsf = structure_factor_binned
+        if not self._settings.verbose:
+            print("Neutron structure factor calculation complete.")
+
+    # --- Helper Methods ---
+
+    def _progress_iterator(self, iterable, desc: str, unit: str = "it"):
+        """Returns a tqdm iterator if not in quiet mode, otherwise returns the original iterable."""
+        if self._settings.verbose:
+            return tqdm(iterable, desc=desc, colour="#00ffff", leave=False, unit=unit)
+        return iterable
+
+    def _generate_q_vectors(
+        self, frame: Frame, q_max: float = 10.0, q_step_scale: float = 6.0
+    ) -> QVectors:
+        """
+        Generates reciprocal space q-vectors.
 
         Returns:
-            Dict: A dictionary containing, qx, qy, qz meshes, and their norms.
+            QVectors: A dataclass containing qx, qy, qz meshes, and their norms.
         """
-        pass
+        box_dim = np.diag(frame.get_lattice())
+        q_step = (2 * np.pi) / box_dim
+        q_range_x = np.arange(q_step[0], q_step_scale, q_step[0])
+        q_range_y = np.arange(q_step[1], q_step_scale, q_step[1])
+        q_range_z = np.arange(q_step[2], q_step_scale, q_step[2])
+
+        q_axis_x = np.concatenate([-q_range_x[::-1], [0], q_range_x])
+        q_axis_y = np.concatenate([-q_range_y[::-1], [0], q_range_y])
+        q_axis_z = np.concatenate([-q_range_z[::-1], [0], q_range_z])
+
+        qx, qy, qz = np.meshgrid(q_axis_x, q_axis_y, q_axis_z, indexing="ij")
+
+        q_norm = np.sqrt(qx**2 + qy**2 + qz**2)
+        q_norm_unique = np.unique(q_norm)
+        q_bins = q_norm_unique[q_norm_unique <= q_max]
+
+        return QVectors(qx=qx, qy=qy, qz=qz, q_norm=q_norm, q_bins=q_bins)
+
+    def _calculate_species_components(self, q_vectors: QVectors) -> SpeciesComponents:
+        """
+        Calculates the sum of sin(q*r) and cos(q*r) over all atoms of each species.
+        """
+        qsin, qcos, correlation_lengths = {}, {}, {}
+        species_list = sorted(self._atoms_data.keys())
+
+        for species in species_list:
+            positions = self._atoms_data[species]
+            correlation_lengths[species] = (
+                1.0  # Example value, you might want to fetch this from your data
+            )
+
+            if self._settings.verbose:
+                with tqdm(
+                    total=len(positions),
+                    desc=f"Processing {species}",
+                    colour="#00ffff",
+                    leave=False,
+                    unit="atom",
+                ) as pbar:
+                    proxy = _NumbaProgressProxy(pbar)
+                    cosd, sind = self._jit_calculate_components(
+                        q_vectors, positions, proxy
+                    )
+            else:
+                cosd, sind = self._jit_calculate_components(q_vectors, positions, None)
+
+            qcos[species], qsin[species] = cosd, sind
+
+        return SpeciesComponents(
+            qcos=qcos, qsin=qsin, correlation_lengths=correlation_lengths
+        )
+
+    def _calculate_all_partial_factors(
+        self, pairs: list[str], components: SpeciesComponents
+    ) -> dict:
+        """
+        Calculates the unbinned partial structure factors for each requested pair.
+        """
+        f = {}
+        species_list = sorted(self._atoms_data.keys())
+        species_counts = {s: len(self._atoms_data[s]) for s in species_list}
+        number_of_atoms = np.sum(list(species_counts.values()))
+        qcos, qsin = components.qcos, components.qsin
+
+        iterator = self._progress_iterator(pairs, "Calculating partial factors", "pair")
+        for pair in iterator:
+            if pair == "total":
+                continue
+
+            species1, species2 = pair.split("-")
+            if species1 == species2:
+                f[pair] = (qcos[species1] ** 2 + qsin[species1] ** 2) / number_of_atoms
+            else:
+                A = (qcos[species1] + qcos[species2]) ** 2
+                B = (qsin[species1] + qsin[species2]) ** 2
+                C = qcos[species1] ** 2 + qsin[species1] ** 2
+                D = qcos[species2] ** 2 + qsin[species2] ** 2
+                f[pair] = (A + B - C - D) / (2 * number_of_atoms)
+
+        if "total" in pairs:
+            f["total"] = self._calculate_total_factor(
+                f,
+                components,
+                species_list,
+                list(species_counts.values()),
+                number_of_atoms,
+            )
+
+        return f
+
+    def _calculate_total_factor(
+        self, f_partial, components, species_list, species_counts, num_atoms
+    ):
+        """Calculates the total structure factor from partial factors."""
+        f_total = np.zeros_like(next(iter(f_partial.values())))
+        cl = components.correlation_lengths
+
+        for i, species in enumerate(species_list):
+            f_total += cl[species] ** 2 * f_partial[f"{species}-{species}"]
+
+        for s1, s2 in combinations(species_list, 2):
+            pair_key = f"{s1}-{s2}" if f"{s1}-{s2}" in f_partial else f"{s2}-{s1}"
+            f_total += 2 * cl[s1] * cl[s2] * f_partial[pair_key]
+
+        normalization = sum(
+            count * cl[species] ** 2
+            for species, count in zip(species_list, species_counts)
+        )
+        f_total /= normalization / num_atoms
+        return f_total
+
+    def _bin_structure_factor(self, f_unbinned: dict, q_vectors: QVectors) -> dict:
+        """
+        Vectorized binning of structure factors by averaging over shells in q-space.
+        """
+        q_norm_flat = q_vectors.q_norm.ravel()
+        q_bins = q_vectors.q_bins
+
+        # Digitize finds which bin each q-norm value belongs to.
+        # We subtract 1 for 0-based indexing.
+        bin_indices = np.digitize(q_norm_flat, q_bins) - 1
+
+        # Create a mask to include only points that fall within our defined bins.
+        num_bins = len(q_bins) - 1
+        valid_mask = (bin_indices >= 0) & (bin_indices < num_bins)
+        valid_indices = bin_indices[valid_mask]
+
+        # Calculate bin midpoints for the final q-axis.
+        q_midpoints = (q_bins[:-1] + q_bins[1:]) / 2
+        binned_sf = {"q": q_midpoints}
+
+        # Get the count of q-points in each bin once.
+        counts = np.bincount(valid_indices, minlength=num_bins)
+        # Avoid division by zero for empty bins.
+        counts[counts == 0] = 1
+
+        iterator = self._progress_iterator(
+            f_unbinned.items(), "Binning results", "pair"
+        )
+        for pair, unbinned_values in iterator:
+            # Sum the structure factor values in each bin using weights.
+            sums = np.bincount(
+                valid_indices,
+                weights=unbinned_values.ravel()[valid_mask],
+                minlength=num_bins,
+            )
+            binned_sf[pair] = sums / counts
+
+        return binned_sf
+
+    @staticmethod
+    @njit(parallel=True, nogil=True)
+    def _jit_calculate_components(q_vectors, positions, progress_proxy):
+        """JIT-compiled core loop to calculate cosine and sine components."""
+        qx, qy, qz = q_vectors.qx, q_vectors.qy, q_vectors.qz
+        qcos, qsin = np.zeros_like(qx), np.zeros_like(qx)
+        for i in prange(len(positions)):
+            pos = positions[i]
+            dot_product = qx * pos[0] + qy * pos[1] + qz * pos[2]
+            qcos += np.cos(dot_product)
+            qsin += np.sin(dot_product)
+            if progress_proxy is not None:
+                progress_proxy.update(1)
+        return qcos, qsin
