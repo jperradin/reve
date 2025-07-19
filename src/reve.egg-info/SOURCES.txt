@@ -12,12 +12,12 @@ src/reve.egg-info/requires.txt
 src/reve.egg-info/top_level.txt
 src/reve/analysis/__init__.py
 src/reve/analysis/analyzer_factory.py
+src/reve/analysis/neighbor_searcher.py
 src/reve/analysis/analyzers/base_analyzer.py
 src/reve/analysis/analyzers/neutron_structure_factor_analyzer.py
 src/reve/config/__init__.py
 src/reve/config/settings.py
 src/reve/core/__init__.py
-src/reve/core/cluster.py
 src/reve/core/frame.py
 src/reve/core/node.py
 src/reve/core/system.py
@@ -30,7 +30,6 @@ src/reve/io/reader/reader_factory.py
 src/reve/io/reader/xyz_reader.py
 src/reve/io/writer/__init__.py
 src/reve/io/writer/base_writer.py
-src/reve/io/writer/clusters_writer.py
 src/reve/io/writer/logs_writer.py
 src/reve/io/writer/multiple_files_summary_writer.py
 src/reve/io/writer/performance_writer.py

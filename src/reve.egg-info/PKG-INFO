@@ -17,6 +17,7 @@ Classifier: Topic :: Scientific/Engineering :: Mathematics
 Classifier: Topic :: Scientific/Engineering :: Visualization
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.9
+Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: numpy>=1.20.0
 Requires-Dist: tqdm>=4.50.0
@@ -24,3 +25,6 @@ Requires-Dist: colorama>=0.4.4
 Requires-Dist: numba>=0.53.0
 Requires-Dist: psutil>=5.8.0
 Dynamic: license-file
+
+# Reve
+# reve

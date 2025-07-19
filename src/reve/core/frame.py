@@ -70,6 +70,14 @@ class Frame:
         """Get the unique elements in the frame"""
         return np.unique([node.symbol for node in self.nodes])
 
+    def get_correlation_lengths(self) -> Dict:
+        """Get the correlation lengths of the species present in the system"""
+        crl = {}
+        for node in self.nodes:
+            if node.symbol not in crl:
+                crl[node.symbol] = node.correlation_length
+        return crl
+
     def get_node_by_id(self, node_id: int) -> Optional[Node]:
         """Get an node by its id"""
         for node in self.nodes:
@@ -124,4 +132,3 @@ class Frame:
         del self.nodes
         del self.lattice
         del self._data
-

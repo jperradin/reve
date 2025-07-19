@@ -11,6 +11,7 @@ from numba import njit, prange
 from tqdm import tqdm
 from dataclasses import dataclass, field
 from itertools import combinations
+from numba_progress import ProgressBar
 
 
 @dataclass
@@ -33,16 +34,6 @@ class SpeciesComponents:
     correlation_lengths: dict[str, float]
 
 
-class _NumbaProgressProxy:
-    """A proxy to allow updating a tqdm progress bar from within a Numba JIT function."""
-
-    def __init__(self, pbar) -> None:
-        self.pbar = pbar
-
-    def update(self, n):
-        self.pbar.update(n)
-
-
 class NeutronStructureFactorAnalyzer(BaseAnalyzer):
     """
     Computes the neutron structure factor for each pair of atoms.
@@ -56,6 +47,7 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
 
     def analyze(self, frame: Frame) -> None:
         self._atoms_data = frame.get_wrapped_positions_by_element()
+        self._correlation_lengths = frame.get_correlation_lengths()
         pairs = self._get_pairs(self._atoms_data.keys())
         self.calculate_neutron_structure_factor(pairs, frame)
 
@@ -72,12 +64,12 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
             self._settings.export_directory, "neutron_structure_factor.dat"
         )
         with open(output_path, "w") as f:
-            header = "q\t" + "\t".join(self.nsf.keys()) + "\n"
+            header = "# q\t" + "\t".join(self.nsf.keys()) + "\n"
             f.write(header)
             for i in range(len(self.q)):
-                line = f"{self.q[i]}"
+                line = f"{self.q[i]:2.5f}"
                 for key in self.nsf.keys():
-                    line += f"\t{self.nsf[key][i]}"
+                    line += f"\t{self.nsf[key][i]:2.5f}"
                 f.write(line + "\n")
 
     def _get_pairs(self, species: List[str]) -> List[str]:
@@ -159,29 +151,27 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
 
         for species in species_list:
             positions = self._atoms_data[species]
-            correlation_lengths[species] = (
-                1.0  # Example value, you might want to fetch this from your data
-            )
 
             if self._settings.verbose:
-                with tqdm(
+                with ProgressBar(
                     total=len(positions),
-                    desc=f"Processing {species}",
-                    colour="#00ffff",
                     leave=False,
+                    colour="#00ffff",
                     unit="atom",
-                ) as pbar:
-                    proxy = _NumbaProgressProxy(pbar)
+                    desc=f"Processing {species}",
+                ) as progress:
                     cosd, sind = self._jit_calculate_components(
-                        q_vectors, positions, proxy
+                        q_vectors.qx, q_vectors.qy, q_vectors.qz, positions, progress
                     )
             else:
-                cosd, sind = self._jit_calculate_components(q_vectors, positions, None)
+                cosd, sind = self._jit_calculate_components(
+                    q_vectors.qx, q_vectors.qy, q_vectors.qz, positions, None
+                )
 
             qcos[species], qsin[species] = cosd, sind
 
         return SpeciesComponents(
-            qcos=qcos, qsin=qsin, correlation_lengths=correlation_lengths
+            qcos=qcos, qsin=qsin, correlation_lengths=self._correlation_lengths
         )
 
     def _calculate_all_partial_factors(
@@ -283,10 +273,9 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
         return binned_sf
 
     @staticmethod
-    @njit(parallel=True, nogil=True)
-    def _jit_calculate_components(q_vectors, positions, progress_proxy):
+    @njit(parallel=True, nogil=True, cache=True, fastmath=True)
+    def _jit_calculate_components(qx, qy, qz, positions, progress_proxy):
         """JIT-compiled core loop to calculate cosine and sine components."""
-        qx, qy, qz = q_vectors.qx, q_vectors.qy, q_vectors.qz
         qcos, qsin = np.zeros_like(qx), np.zeros_like(qx)
         for i in prange(len(positions)):
             pos = positions[i]
