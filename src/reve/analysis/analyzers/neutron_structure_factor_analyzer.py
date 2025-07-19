@@ -69,7 +69,7 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
             for i in range(1, len(self.q)):
                 line = f"{self.q[i]:2.5f}"
                 for key in self.nsf.keys():
-                    line += f"{self.nsf[key][i]:2.5f}\t"
+                    line += f"\t{self.nsf[key][i]:2.5f}"
                 f.write(line + "\n")
 
     def _get_pairs(self, species: List[str]) -> List[str]:

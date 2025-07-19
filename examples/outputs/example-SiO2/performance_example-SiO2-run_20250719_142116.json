@@ -1,0 +1,64 @@
+{
+  "id": "19e33496-d20c-4b6d-ac27-02a407edb6de",
+  "name": "example-SiO2-run_20250719_142116",
+  "timestamp": "2025-07-19T14:21:16.643990",
+  "execution_time_ms": 1068.5787200927734,
+  "memory_usage_mb": 312.515625,
+  "cpu_usage_percent": 0.0,
+  "metrics": {
+    "scan_trajectory_time_ms": 1.2211799621582031,
+    "frame_number": 0,
+    "neighbor_finding_time_ms": 323.87304306030273,
+    "analysis_time_ms": 725.3303527832031,
+    "number_nodes": 1008,
+    "total_frames_processed": 1,
+    "memory_increase_mb": 137.3125,
+    "avg_frame_time_ms": 1051.558494567871,
+    "avg_neighbor_time_ms": 323.87304306030273,
+    "avg_analysis_time_ms": 725.3303527832031,
+    "avg_number_nodes": 1008.0
+  },
+  "history": [
+    {
+      "timestamp": "2025-07-19T14:21:16.646042",
+      "execution_time_ms": null,
+      "memory_usage_mb": null,
+      "cpu_usage_percent": null,
+      "metrics": {
+        "scan_trajectory_time_ms": 1.2211799621582031
+      }
+    },
+    {
+      "timestamp": "2025-07-19T14:21:17.705822",
+      "execution_time_ms": 1051.558494567871,
+      "memory_usage_mb": 312.515625,
+      "cpu_usage_percent": 0.0,
+      "metrics": {
+        "scan_trajectory_time_ms": 1.2211799621582031,
+        "frame_number": 0,
+        "neighbor_finding_time_ms": 323.87304306030273,
+        "analysis_time_ms": 725.3303527832031,
+        "number_nodes": 1008
+      }
+    },
+    {
+      "timestamp": "2025-07-19T14:21:17.712718",
+      "execution_time_ms": 1068.5787200927734,
+      "memory_usage_mb": 312.515625,
+      "cpu_usage_percent": 0.0,
+      "metrics": {
+        "scan_trajectory_time_ms": 1.2211799621582031,
+        "frame_number": 0,
+        "neighbor_finding_time_ms": 323.87304306030273,
+        "analysis_time_ms": 725.3303527832031,
+        "number_nodes": 1008,
+        "total_frames_processed": 1,
+        "memory_increase_mb": 137.3125,
+        "avg_frame_time_ms": 1051.558494567871,
+        "avg_neighbor_time_ms": 323.87304306030273,
+        "avg_analysis_time_ms": 725.3303527832031,
+        "avg_number_nodes": 1008.0
+      }
+    }
+  ]
+}
