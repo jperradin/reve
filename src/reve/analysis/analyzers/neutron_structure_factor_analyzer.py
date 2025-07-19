@@ -1,3 +1,4 @@
+# jperradin/reve/jperradin-reve-2b272a7b360ba6cf2863f0b77d96e53e958e144b/src/reve/analysis/analyzers/neutron_structure_factor_analyzer.py
 from typing import List, Dict
 from ...core.frame import Frame
 from ...core.system import Settings
@@ -44,15 +45,31 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
         self.q = None
         self.nsf = None
         self._atoms_data = None
+        self.nsf_data = []
+        self.frame_count = 0
 
     def analyze(self, frame: Frame) -> None:
         self._atoms_data = frame.get_wrapped_positions_by_element()
         self._correlation_lengths = frame.get_correlation_lengths()
         pairs = self._get_pairs(self._atoms_data.keys())
         self.calculate_neutron_structure_factor(pairs, frame)
+        self.nsf_data.append(self.nsf)
+        self.frame_count += 1
 
     def finalize(self) -> None:
-        return super().finalize()
+        if self.frame_count == 0:
+            return
+
+        # Initialize a dictionary to hold the sum of structure factors
+        nsf_sum = {key: np.zeros_like(self.nsf_data[0][key]) for key in self.nsf_data[0].keys()}
+
+        # Sum the structure factors from all frames
+        for nsf_frame in self.nsf_data:
+            for key, value in nsf_frame.items():
+                nsf_sum[key] += value
+
+        # Calculate the average
+        self.nsf = {key: value / self.frame_count for key, value in nsf_sum.items()}
 
     def get_result(self) -> Dict[str, float]:
         return self.nsf

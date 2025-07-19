@@ -38,6 +38,6 @@ __version__ ➜  0.0.1
         Analysis Settings:
         -----------------
 		|- overwrite: True
-		|- with_all: True
+		|- with_neutron_structure_factor_fft: True
         
         

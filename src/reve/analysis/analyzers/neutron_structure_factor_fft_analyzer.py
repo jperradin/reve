@@ -1,3 +1,4 @@
+# jperradin/reve/jperradin-reve-2b272a7b360ba6cf2863f0b77d96e53e958e144b/src/reve/analysis/analyzers/neutron_structure_factor_fft_analyzer.py
 # src/reve/analysis/analyzers/neutron_structure_factor_fft_analyzer.py
 
 import numpy as np
@@ -31,15 +32,41 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         self.grid_size = 128
         self.q_max = 10.0
         self.q_bins = 100
+        self.nsf_data = []
+        self.frame_count = 0
+
 
     def analyze(self, frame: Frame) -> None:
         self._atoms_data = frame.get_wrapped_positions_by_element()
         self._correlation_lengths = frame.get_correlation_lengths()
+        
+        # Dynamically adjust grid_size based on box dimensions and desired q_max
+        L = np.max(np.diag(frame.get_lattice()))
+        # Ensure grid is large enough to reach q_max
+        required_grid_size = int(np.ceil(self.q_max * L / np.pi))
+        # Use next power of 2 for FFT efficiency, but not smaller than the default
+        self.grid_size = max(self.grid_size, 1 << (required_grid_size - 1).bit_length())
+        
         pairs = self._get_pairs(list(self._atoms_data.keys()))
         self.calculate_s_q_fft(pairs, frame)
+        self.nsf_data.append(self.nsf)
+        self.frame_count += 1
 
     def finalize(self) -> None:
-        pass
+        if self.frame_count == 0:
+            return
+
+        # Initialize a dictionary to hold the sum of structure factors
+        nsf_sum = {key: np.zeros_like(self.nsf_data[0][key]) for key in self.nsf_data[0].keys()}
+
+        # Sum the structure factors from all frames
+        for nsf_frame in self.nsf_data:
+            for key, value in nsf_frame.items():
+                nsf_sum[key] += value
+
+        # Calculate the average
+        self.nsf = {key: value / self.frame_count for key, value in nsf_sum.items()}
+
 
     def get_result(self) -> dict[str, float]:
         return self.nsf
@@ -51,7 +78,7 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
             self._settings.export_directory, "neutron_structure_factor_fft.dat"
         )
         with open(output_path, "w") as f:
-            header = "# q\t" + "\t".join(self.nsf.keys()) + "\n"
+            header = f"# grid_size : {self.grid_size}\n"+"# q\t" + "\t".join(self.nsf.keys()) + "\n"
             f.write(header)
             for i in range(2,len(self.q)):
                 # Skipping 2 values

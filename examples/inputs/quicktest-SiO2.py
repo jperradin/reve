@@ -31,7 +31,8 @@ config_lattice = c.LatticeSettings(
 
 # Analysis settings
 config_analysis = c.AnalysisSettings(
-    with_all=True,
+    with_all=False,
+    with_neutron_structure_factor_fft=True,
 )
 
 # Build Settings object

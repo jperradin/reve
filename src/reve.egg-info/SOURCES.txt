@@ -15,6 +15,7 @@ src/reve/analysis/analyzer_factory.py
 src/reve/analysis/neighbor_searcher.py
 src/reve/analysis/analyzers/base_analyzer.py
 src/reve/analysis/analyzers/neutron_structure_factor_analyzer.py
+src/reve/analysis/analyzers/neutron_structure_factor_fft_analyzer.py
 src/reve/config/__init__.py
 src/reve/config/settings.py
 src/reve/core/__init__.py
