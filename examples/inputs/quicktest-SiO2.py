@@ -4,6 +4,7 @@ import reve.config.settings as c
 
 # Path to the trajectory file
 path = "./examples/inputs/example-SiO2-1008at.xyz"
+path = "./examples/inputs/example-SiO2.xyz"
 
 # General settings
 config_general = c.GeneralSettings(
