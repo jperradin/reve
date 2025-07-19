@@ -1,5 +1,6 @@
 from typing import List, Generator
 from collections import namedtuple
+from colorama import Fore, Style
 import numpy as np
 import os
 
@@ -92,7 +93,15 @@ class XYZReader(BaseReader):
             raise IOError(f"Error scanning trajectory file {self.filename}: {e}")
 
         if self.verbose:
-            print(f"Scanned {self.num_frames} frames in {self.filename}")
+            message = (
+                Fore.LIGHTBLUE_EX
+                + rf"""
+   Scanned {self.num_frames} frames in {self.filename}
+   Found {num_nodes} nodes
+"""
+                + Style.RESET_ALL
+            )
+            print(message)
 
         self.is_indexed = True
         # The `parse` method will use these FrameIndex objects to seek directly

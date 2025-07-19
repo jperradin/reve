@@ -1,6 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from typing import List, Dict, Optional
+from numba_progress import ProgressBar
 
 from .node import Node
 from ..utils.geometry import wrap_positions
@@ -91,28 +92,41 @@ class Frame:
 
     def get_positions_by_element(self) -> Dict[str, np.ndarray]:
         """Get the positions of all nodes in the frame grouped by element"""
-        return {
-            node.symbol: np.array(
-                [node.position for node in self.nodes if node.symbol == node.symbol]
-            )
-            for node in self.nodes
-        }
+        wp = {}
+        for species in self.get_unique_elements():
+            if species not in wp:
+                wp[species] = np.array([node.position for node in self.nodes if node.symbol == species])
+        return wp            
 
     def get_wrapped_positions(self) -> np.ndarray:
         """Get the wrapped positions of all nodes in the frame"""
-        return wrap_positions(self.get_positions(), self.lattice)
+        with ProgressBar(
+            total=len(self.get_positions()),
+            leave=False,
+            colour="#eaeaaa",
+            unit="atom",
+            desc="Unwrapping positions",
+        ) as progress:
+            return wrap_positions(self.get_positions(), self.lattice, progress)
 
     def get_wrapped_positions_by_element(self) -> Dict[str, np.ndarray]:
         """Get the wrapped positions of all nodes in the frame grouped by element"""
-        return {
-            node.symbol: wrap_positions(
-                np.array(
-                    [node.position for node in self.nodes if node.symbol == node.symbol]
-                ),
-                self.lattice,
-            )
-            for node in self.nodes
-        }
+        wrapped_positions = {}
+        positions_by_element = self.get_positions_by_element()
+        for species, positions in positions_by_element.items():
+            with ProgressBar(
+                total=len(positions),
+                leave=False,
+                colour="#eaeaaa",
+                unit="atom",
+                desc=f"Wrapping {species} positions",
+            ) as progress:
+                wrapped_positions[species] = wrap_positions(
+                    positions, self.lattice, progress
+                )
+
+        del positions, positions_by_element
+        return wrapped_positions
 
     def get_nodes(self) -> List[Node]:
         """Get the nodes of the frame"""
