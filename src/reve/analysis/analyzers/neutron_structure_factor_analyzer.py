@@ -64,12 +64,12 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
             self._settings.export_directory, "neutron_structure_factor.dat"
         )
         with open(output_path, "w") as f:
-            header = "# q\t" + "\t".join(self.nsf.keys()) + "\n"
+            header = "# q (bin center) \t" + "\t".join(self.nsf.keys()) + "\n"
             f.write(header)
-            for i in range(len(self.q)):
+            for i in range(1, len(self.q)):
                 line = f"{self.q[i]:2.5f}"
                 for key in self.nsf.keys():
-                    line += f"\t{self.nsf[key][i]:2.5f}"
+                    line += f"{self.nsf[key][i]:2.5f}\t"
                 f.write(line + "\n")
 
     def _get_pairs(self, species: List[str]) -> List[str]:
@@ -237,37 +237,55 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
         """
         Vectorized binning of structure factors by averaging over shells in q-space.
         """
+        # 1. Flatten the 3D array of q-vector magnitudes.
         q_norm_flat = q_vectors.q_norm.ravel()
         q_bins = q_vectors.q_bins
-
-        # Digitize finds which bin each q-norm value belongs to.
-        # We subtract 1 for 0-based indexing.
-        bin_indices = np.digitize(q_norm_flat, q_bins) - 1
-
-        # Create a mask to include only points that fall within our defined bins.
         num_bins = len(q_bins) - 1
-        valid_mask = (bin_indices >= 0) & (bin_indices < num_bins)
-        valid_indices = bin_indices[valid_mask]
 
-        # Calculate bin midpoints for the final q-axis.
+        # 2. Create a mask to identify all q-vectors that are NOT q=0.
+        is_not_q_zero_mask = q_norm_flat > 1e-9
+
+        # 3. Apply the mask to get the q-norms that we will actually bin.
+        q_norms_to_bin = q_norm_flat[is_not_q_zero_mask]
+
+        # 4. For these non-zero q-norms, determine which bin each one falls into.
+        bin_indices = np.digitize(q_norms_to_bin, q_bins) - 1
+
+        # 5. Create a new mask to select only the values that fall within our valid bin range (q <= q_max).
+        # This mask has the same dimensions as `q_norms_to_bin`.
+        is_in_valid_bin_mask = (bin_indices >= 0) & (bin_indices < num_bins)
+
+        # 6. Get the final bin indices for the data points we are keeping.
+        final_bin_indices = bin_indices[is_in_valid_bin_mask]
+
+        # 7. Calculate the midpoints of the q-bins for the x-axis of the plot.
         q_midpoints = (q_bins[:-1] + q_bins[1:]) / 2
         binned_sf = {"q": q_midpoints}
 
-        # Get the count of q-points in each bin once.
-        counts = np.bincount(valid_indices, minlength=num_bins)
-        # Avoid division by zero for empty bins.
-        counts[counts == 0] = 1
+        # 8. Count how many q-vectors fall into each bin.
+        counts = np.bincount(final_bin_indices, minlength=num_bins)
+        counts[counts == 0] = 1  # Avoid division by zero.
 
+        # 9. Iterate through each partial/total structure factor and bin its values.
         iterator = self._progress_iterator(
             f_unbinned.items(), "Binning results", "pair"
         )
         for pair, unbinned_values in iterator:
-            # Sum the structure factor values in each bin using weights.
+            # a. Flatten the 3D S(q) data and select only the values for non-zero q.
+            sf_to_bin = unbinned_values.ravel()[is_not_q_zero_mask]
+
+            # b. From these, select only the S(q) values that correspond to valid bins.
+            # `sf_to_bin` and `is_in_valid_bin_mask` have the same length, so this is a valid operation.
+            sf_weights = sf_to_bin[is_in_valid_bin_mask]
+
+            # c. Sum the S(q) values (weights) for each bin.
             sums = np.bincount(
-                valid_indices,
-                weights=unbinned_values.ravel()[valid_mask],
+                final_bin_indices,
+                weights=sf_weights,
                 minlength=num_bins,
             )
+
+            # d. Calculate the average S(q) for each bin and store it.
             binned_sf[pair] = sums / counts
 
         return binned_sf

@@ -63,12 +63,18 @@ class AnalysisSettings:
     with_neutron_structure_factor: bool = (
         False  # Whether to calculate the neutron structure factor
     )
+    with_neutron_structure_factor_fft: bool = (
+        False  # Whether to calculate the neutron structure factor via fft
+    )
 
     def get_analyzers(self) -> List[str]:
         analyzers = []
         if self.with_neutron_structure_factor:
             analyzers.append("NeutronStructureFactorAnalyzer")
+        if self.with_neutron_structure_factor_fft:
+            analyzers.append("NeutronStructureFactorFFTAnalyzer")
         if self.with_all:
+            analyzers.append("NeutronStructureFactorFFTAnalyzer")
             analyzers.append("NeutronStructureFactorAnalyzer")
         return analyzers
 
@@ -81,6 +87,11 @@ class AnalysisSettings:
                 elif (
                     not self.with_neutron_structure_factor
                     and key == "with_neutron_structure_factor"
+                ):
+                    continue
+                elif (
+                    not self.with_neutron_structure_factor_fft
+                    and key == "with_neutron_structure_factor_fft"
                 ):
                     continue
                 lines.append(f"\t\t|- {key}: {value}")

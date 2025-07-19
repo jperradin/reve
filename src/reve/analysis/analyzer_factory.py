@@ -2,6 +2,7 @@ from typing import Optional
 from ..config.settings import Settings
 from .analyzers.base_analyzer import BaseAnalyzer
 from .analyzers.neutron_structure_factor_analyzer import NeutronStructureFactorAnalyzer
+from .analyzers.neutron_structure_factor_fft_analyzer import NeutronStructureFactorFFTAnalyzer
 
 
 class AnalyzerFactory:
@@ -9,6 +10,7 @@ class AnalyzerFactory:
         self._analyzers = {}
         # Register other analyzers here
         self.register_analyzer(NeutronStructureFactorAnalyzer(settings))
+        self.register_analyzer(NeutronStructureFactorFFTAnalyzer(settings))
 
     def register_analyzer(self, analyzer: BaseAnalyzer) -> None:
         self._analyzers[analyzer.__class__.__name__] = analyzer
