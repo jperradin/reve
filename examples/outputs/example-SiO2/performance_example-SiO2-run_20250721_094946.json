@@ -1,0 +1,64 @@
+{
+  "id": "8fb0e3f3-3091-40a7-bc2e-abee3c52e547",
+  "name": "example-SiO2-run_20250721_094946",
+  "timestamp": "2025-07-21T09:49:46.193342",
+  "execution_time_ms": 652.0028114318848,
+  "memory_usage_mb": 220.5546875,
+  "cpu_usage_percent": 0.0,
+  "metrics": {
+    "scan_trajectory_time_ms": 1.110076904296875,
+    "frame_number": 0,
+    "neighbor_finding_time_ms": 36.333560943603516,
+    "analysis_time_ms": 348.85454177856445,
+    "number_nodes": 1008,
+    "total_frames_processed": 1,
+    "memory_increase_mb": 38.609375,
+    "avg_frame_time_ms": 644.8891162872314,
+    "avg_neighbor_time_ms": 36.333560943603516,
+    "avg_analysis_time_ms": 348.85454177856445,
+    "avg_number_nodes": 1008.0
+  },
+  "history": [
+    {
+      "timestamp": "2025-07-21T09:49:46.194877",
+      "execution_time_ms": null,
+      "memory_usage_mb": null,
+      "cpu_usage_percent": null,
+      "metrics": {
+        "scan_trajectory_time_ms": 1.110076904296875
+      }
+    },
+    {
+      "timestamp": "2025-07-21T09:49:46.844610",
+      "execution_time_ms": 644.8891162872314,
+      "memory_usage_mb": 220.5546875,
+      "cpu_usage_percent": 0.0,
+      "metrics": {
+        "scan_trajectory_time_ms": 1.110076904296875,
+        "frame_number": 0,
+        "neighbor_finding_time_ms": 36.333560943603516,
+        "analysis_time_ms": 348.85454177856445,
+        "number_nodes": 1008
+      }
+    },
+    {
+      "timestamp": "2025-07-21T09:49:46.845421",
+      "execution_time_ms": 652.0028114318848,
+      "memory_usage_mb": 220.5546875,
+      "cpu_usage_percent": 0.0,
+      "metrics": {
+        "scan_trajectory_time_ms": 1.110076904296875,
+        "frame_number": 0,
+        "neighbor_finding_time_ms": 36.333560943603516,
+        "analysis_time_ms": 348.85454177856445,
+        "number_nodes": 1008,
+        "total_frames_processed": 1,
+        "memory_increase_mb": 38.609375,
+        "avg_frame_time_ms": 644.8891162872314,
+        "avg_neighbor_time_ms": 36.333560943603516,
+        "avg_analysis_time_ms": 348.85454177856445,
+        "avg_number_nodes": 1008.0
+      }
+    }
+  ]
+}

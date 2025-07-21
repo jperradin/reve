@@ -1,10 +1,21 @@
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from numba_progress import ProgressBar
 
 from .node import Node
 from ..utils.geometry import wrap_positions
+
+
+@dataclass(slots=True)
+class NodesData:
+    """
+    Holds node-related data for a frame.
+    """
+
+    positions: Dict[str, np.ndarray] = field(default_factory=dict)
+    wrapped_positions: Dict[str, np.ndarray] = field(default_factory=dict)
+    correlation_lengths: Dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -20,8 +31,8 @@ class Frame:
         List of nodes in the frame
     lattice : np.ndarray
         Lattice of the frame
-    clusters : Optional[List[Cluster]]
-        List of clusters in the frame
+    nodes_data : NodesData
+        Dataclass holding node data for the frame
     _data : Dict[str, np.ndarray]
         Internal data structure for node data (symbol, position)
     """
@@ -29,7 +40,8 @@ class Frame:
     frame_id: int
     nodes: List[Node]
     lattice: np.ndarray
-    _data: Dict[str, np.ndarray]
+    nodes_data: NodesData = field(default_factory=NodesData)
+    _data: Dict[str, np.ndarray] | None = None
 
     def __post_init__(self):
         """Initialisation after object creation"""
@@ -51,6 +63,14 @@ class Frame:
             self.nodes.append(Node(node_id=id, symbol=symbol, position=position))
             id += 1
 
+        self._initalize_nodes_data()
+
+    def _initalize_nodes_data(self) -> None:
+        """Initializes the NodesData dataclass."""
+        self.nodes_data.positions = self.get_positions_by_element()
+        self.nodes_data.wrapped_positions = self.get_wrapped_positions_by_element()
+        self.nodes_data.correlation_lengths = self.get_correlation_lengths()
+
     def set_lattice(self, lattice: np.ndarray) -> None:
         """Set the lattice of the frame"""
         if lattice.shape != (3, 3):
@@ -63,7 +83,7 @@ class Frame:
 
         self.lattice = lattice
 
-    def get_lattice(self) -> Optional[np.ndarray]:
+    def get_lattice(self) -> np.ndarray:
         """Get the lattice of the frame"""
         return self.lattice
 
@@ -95,8 +115,10 @@ class Frame:
         wp = {}
         for species in self.get_unique_elements():
             if species not in wp:
-                wp[species] = np.array([node.position for node in self.nodes if node.symbol == species])
-        return wp            
+                wp[species] = np.array(
+                    [node.position for node in self.nodes if node.symbol == species]
+                )
+        return wp
 
     def get_wrapped_positions(self) -> np.ndarray:
         """Get the wrapped positions of all nodes in the frame"""

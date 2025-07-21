@@ -241,4 +241,3 @@ __all__ = [
     "calculate_pbc_angle",
     "calculate_gyration_radius",
 ]
-

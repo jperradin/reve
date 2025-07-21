@@ -60,6 +60,9 @@ class AnalysisSettings:
 
     overwrite: bool = True  # Whether to overwrite the existing file, if False, appends results to the file
     with_all: bool = False  # Whether to calculate all the properties
+    with_pair_distribution_function: bool = (
+        False  # Whether to calculate the pair distribution functions.
+    )
     with_neutron_structure_factor: bool = (
         False  # Whether to calculate the neutron structure factor
     )
@@ -67,13 +70,21 @@ class AnalysisSettings:
         False  # Whether to calculate the neutron structure factor via fft
     )
 
+    # PairDistributionFunctionAnalyzer settings
+    # r_max: float = 10.0
+    # dr: float = 0.1
+    # nbins: int = 600
+
     def get_analyzers(self) -> List[str]:
         analyzers = []
+        if self.with_pair_distribution_function:
+            analyzers.append("PairDistributionFunctionAnalyzer")
         if self.with_neutron_structure_factor:
             analyzers.append("NeutronStructureFactorAnalyzer")
         if self.with_neutron_structure_factor_fft:
             analyzers.append("NeutronStructureFactorFFTAnalyzer")
         if self.with_all:
+            analyzers.append("PairDistributionFunctionAnalyzer")
             analyzers.append("NeutronStructureFactorFFTAnalyzer")
             analyzers.append("NeutronStructureFactorAnalyzer")
         return analyzers
@@ -83,6 +94,11 @@ class AnalysisSettings:
         for key, value in self.__dict__.items():
             if value is not None:
                 if not self.with_all and key == "with_all":
+                    continue
+                elif (
+                    not self.with_pair_distribution_function
+                    and key == "with_pair_distribution_function"
+                ):
                     continue
                 elif (
                     not self.with_neutron_structure_factor

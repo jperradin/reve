@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 from ...core.frame import Frame
 from ...core.system import Settings
 from .base_analyzer import BaseAnalyzer
@@ -43,13 +43,15 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
         super().__init__(settings)
         self.q = None
         self.nsf = None
-        self._atoms_data = None
+        self._atoms_data: Optional(Dict[str, np.ndarray]) = None
         self.nsf_data = []
         self.frame_count = 0
 
     def analyze(self, frame: Frame) -> None:
-        self._atoms_data = frame.get_wrapped_positions_by_element()
-        self._correlation_lengths = frame.get_correlation_lengths()
+        self._atoms_data = frame.nodes_data.wrapped_positions
+        self._correlation_lengths: Dict[str, float] = (
+            frame.nodes_data.correlation_lengths
+        )
         pairs = self._get_pairs(self._atoms_data.keys())
         self.calculate_neutron_structure_factor(pairs, frame)
         self.nsf_data.append(self.nsf)
@@ -321,4 +323,3 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
             if progress_proxy is not None:
                 progress_proxy.update(1)
         return qcos, qsin
-

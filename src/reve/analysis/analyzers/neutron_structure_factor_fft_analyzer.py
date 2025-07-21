@@ -1,3 +1,4 @@
+from typing import Optional, List, Dict
 import numpy as np
 import os
 from dataclasses import dataclass
@@ -27,7 +28,7 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         super().__init__(settings)
         self.q = None
         self.nsf = None
-        self._atoms_data = None
+        self._atoms_data: Optional(Dict[str, nd.ndarray]) = None
         # For optimal FFT performance, grid size should be a power of 2
         self.grid_size = 128
         self.q_max = 10.0
@@ -36,8 +37,10 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         self.frame_count = 0
 
     def analyze(self, frame: Frame) -> None:
-        self._atoms_data = frame.get_wrapped_positions_by_element()
-        self._correlation_lengths = frame.get_correlation_lengths()
+        self._atoms_data = frame.nodes_data.wrapped_positions
+        self._correlation_lengths: Dict[str, float] = (
+            frame.nodes_data.correlation_lengths
+        )
 
         # Dynamically adjust grid_size based on box dimensions and desired q_max
         L = np.max(np.diag(frame.get_lattice()))
@@ -230,4 +233,3 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
             )  # Replace NaNs from empty bins with 0
 
         return binned_sf
-
