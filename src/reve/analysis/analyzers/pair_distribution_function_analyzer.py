@@ -16,7 +16,7 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
     Computes the pair distribution function G(r) for each pair in the system.
     """
 
-    def ___init___(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings) -> None:
         super().__init__(settings)
         self.r = None
         self.gr = None
@@ -24,19 +24,21 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
         self.gr_data = []
         self.frame_count = 0
         self.r_max = 10.0
-        self.dr = 0.1
-        self.bins = int(self.r_max / self.dr)
+        self.bins = 600
+        self.dr = float(self.r_max / self.bins)
 
         print("init pair_distribution_function")
 
     def _check_rmax(self, lattice: np.ndarray) -> None:
         check = False
-        for l in lattice:
-            if self.r_max > l:
+        for l in np.diag(lattice):
+            if self.r_max > l / 2:
                 check = True
-                self.r_max = l / 2
-                raise Warning("r_max had to be rescale to half the box")
-                return
+        if check:
+            self.r_max = min(np.diag(lattice)) / 2
+            print(
+                f"Warning: r_max has been rescaled to half the smallest box dimension: {self.r_max}"
+            )
 
     def analyze(self, frame: Frame) -> None:
         self._atoms_data = frame.nodes_data.wrapped_positions
@@ -100,7 +102,9 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
             pos1 = self._atoms_data[s1]
             pos2 = self._atoms_data[s2]
 
-            hist = self._calculate_histogram(pos1, pos2, frame.get_lattice())
+            hist = self._calculate_histogram(
+                pos1, pos2, frame.get_lattice(), self.bins, self.r_max, self.dr
+            )
 
             if s1 == s2:
                 n1 = len(pos1)
@@ -119,16 +123,23 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
 
         self.gr = gr
 
+    @staticmethod
+    @njit(parallel=True, nogil=True, cache=True, fastmath=True)
     def _calculate_histogram(
-        self, pos1: np.ndarray, pos2: np.ndarray, lattice: np.ndarray
+        pos1: np.ndarray,
+        pos2: np.ndarray,
+        lattice: np.ndarray,
+        bins: int,
+        r_max: float,
+        dr: float,
     ) -> np.ndarray:
-        hist = np.zeros(self.bins)
+        hist = np.zeros(bins)
         for i in prange(len(pos1)):
             for j in range(len(pos2)):
                 if np.array_equal(pos1[i], pos2[j]):
                     continue
                 dist = calculate_pbc_distance(pos1[i], pos2[j], lattice)
-                if dist < self.r_max:
-                    bin_index = int(dist / self.dr)
+                if dist < r_max:
+                    bin_index = int(dist / dr)
                     hist[bin_index] += 1
         return hist

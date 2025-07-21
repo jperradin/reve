@@ -3,16 +3,16 @@ from reve import SettingsBuilder, main
 import reve.config.settings as c
 
 # Path to the trajectory file
-path = "./examples/inputs/example-SiO2-1008at.xyz"
+# path = "./examples/inputs/example-SiO2-1008at.xyz"
 # path = "./examples/inputs/example-SiO2.xyz"
-# path = "./examples/inputs/example-SiO2-96000at.xyz"
+path = "./examples/inputs/example-SiO2-96000at.xyz"
 
 # General settings
 config_general = c.GeneralSettings(
     project_name="example-SiO2",  # Project name
     export_directory="./examples/outputs/",  # Export directory
     file_location=path,  # File location
-    range_of_frames=(0, 0),  # Range of frames
+    range_of_frames=(0, -1),  # Range of frames
     apply_pbc=True,  # Apply periodic boundary conditions
     verbose=True,  # Verbose mode (if True, print title, progress bars, etc.)
     save_logs=True,  # Save logs    (save logs to export_directory/logs.txt)
