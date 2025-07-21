@@ -128,14 +128,44 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
             rho_q[species] = np.fft.fftn(density_grid)
 
         q_vectors = self._generate_fft_q_vectors(lattice, grid_shape)
+
+        # --- Calculate Total Structure Factor ---
+        rho_q_total = np.zeros_like(next(iter(rho_q.values())), dtype=np.complex128)
+        for species, rq in rho_q.items():
+            rho_q_total += self._correlation_lengths[species] * rq
+
+        num_atoms = sum(len(pos) for pos in self._atoms_data.values())
+        # Normalization factor: <b^2>
+        b_sq_avg = (
+            sum(
+                len(self._atoms_data[s]) * self._correlation_lengths[s] ** 2
+                for s in self._atoms_data
+            )
+            / num_atoms
+        )
+
+        s_q_total_unbinned = (np.abs(rho_q_total) ** 2) / (num_atoms * b_sq_avg)
+
+        # --- Calculate Partial Structure Factors ---
         f_unbinned = self._calculate_factors_from_rho_q(pairs, rho_q)
 
-        # Shift the zero-frequency component to the center for easier radial binning
+        # --- Binning ---
+        # Shift the zero-frequency component to the center
+        s_q_total_unbinned = np.fft.fftshift(s_q_total_unbinned)
         for pair in f_unbinned:
             f_unbinned[pair] = np.fft.fftshift(f_unbinned[pair])
         q_vectors.q_norm = np.fft.fftshift(q_vectors.q_norm)
 
+        # Bin the total structure factor
+        q_norm_flat = q_vectors.q_norm.ravel()
+        q_bins = q_vectors.q_bins
+        binned_total_sf, _, _ = binned_statistic(
+            q_norm_flat, s_q_total_unbinned.ravel(), statistic="mean", bins=q_bins
+        )
+
+        # Bin the partials
         structure_factor_binned = self._bin_structure_factor(f_unbinned, q_vectors)
+        structure_factor_binned["total"] = np.nan_to_num(binned_total_sf)
 
         self.q = structure_factor_binned.pop("q")
         self.nsf = structure_factor_binned
@@ -160,6 +190,7 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         species_list = sorted(self._atoms_data.keys())
         species_counts = {s: len(self._atoms_data[s]) for s in species_list}
         num_atoms = sum(species_counts.values())
+        concentrations = {s: species_counts[s] / num_atoms for s in species_list}
 
         for pair in self._progress_iterator(
             pairs, "Calculating partial factors", "pair"
@@ -168,25 +199,33 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
                 continue
             s1, s2 = pair.split("-")
 
+            # Renormalize to get the Faber-Ziman partials
             if s1 == s2:
-                if species_counts[s1] > 0:
-                    f[pair] = (np.abs(rho_q[s1]) ** 2) / species_counts[s1]
-                else:
-                    f[pair] = np.zeros_like(rho_q[s1])
+                f[pair] = (
+                    np.abs(rho_q[s1]) ** 2 - species_counts[s1]
+                ) / species_counts[s1]
             else:
-                if species_counts[s1] > 0 and species_counts[s2] > 0:
-                    f[pair] = (rho_q[s1] * np.conj(rho_q[s2])).real / np.sqrt(
-                        species_counts[s1] * species_counts[s2]
-                    )
-                else:
-                    f[pair] = np.zeros_like(rho_q[s1])
+                f[pair] = (rho_q[s1] * np.conj(rho_q[s2])).real / np.sqrt(
+                    species_counts[s1] * species_counts[s2]
+                )
+
+        # Construct the partials the user expects
+        s_user = {}
+        for pair in f:
+            s1, s2 = pair.split("-")
+            if s1 == s2:
+                s_user[pair] = concentrations[s1] * (1 + f[pair])
+            else:
+                s_user[pair] = (
+                    np.sqrt(concentrations[s1] * concentrations[s2]) * f[pair]
+                )
 
         if "total" in pairs:
-            f["total"] = self._calculate_total_factor(
-                f, species_list, species_counts, num_atoms
+            s_user["total"] = self._calculate_total_factor(
+                s_user, species_list, species_counts, num_atoms
             )
 
-        return f
+        return s_user
 
     def _calculate_total_factor(
         self, f_partial, species_list, species_counts, num_atoms
@@ -202,18 +241,15 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         b_avg_sq = b_avg**2
 
         for s1 in species_list:
-            f_total += concentrations[s1] ** 2 * cl[s1] ** 2 * f_partial[f"{s1}-{s1}"]
-
-        for s1, s2 in combinations(species_list, 2):
-            pair_key = f"{s1}-{s2}"
-            f_total += (
-                2
-                * concentrations[s1]
-                * concentrations[s2]
-                * cl[s1]
-                * cl[s2]
-                * f_partial[pair_key]
-            )
+            for s2 in species_list:
+                pair_key = f"{s1}-{s2}" if f"{s1}-{s2}" in f_partial else f"{s2}-{s1}"
+                f_total += (
+                    concentrations[s1]
+                    * concentrations[s2]
+                    * cl[s1]
+                    * cl[s2]
+                    * f_partial[pair_key]
+                )
 
         if b_avg_sq > 0:
             f_total /= b_avg_sq

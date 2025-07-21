@@ -1,0 +1,39 @@
+{
+  "id": "ce5fc466-4276-4b4e-835d-d3e2ef911afb",
+  "name": "example-SiO2-run_20250721_143932",
+  "timestamp": "2025-07-21T14:39:32.500511",
+  "execution_time_ms": 15273.941040039062,
+  "memory_usage_mb": 467.0703125,
+  "cpu_usage_percent": 0.0,
+  "metrics": {
+    "scan_trajectory_time_ms": 49.70550537109375,
+    "frame_number": 0,
+    "neighbor_finding_time_ms": 5065.299987792969,
+    "analysis_time_ms": 9591.80760383606,
+    "number_nodes": 96000
+  },
+  "history": [
+    {
+      "timestamp": "2025-07-21T14:39:32.550813",
+      "execution_time_ms": null,
+      "memory_usage_mb": null,
+      "cpu_usage_percent": null,
+      "metrics": {
+        "scan_trajectory_time_ms": 49.70550537109375
+      }
+    },
+    {
+      "timestamp": "2025-07-21T14:39:47.945208",
+      "execution_time_ms": 15273.941040039062,
+      "memory_usage_mb": 467.0703125,
+      "cpu_usage_percent": 0.0,
+      "metrics": {
+        "scan_trajectory_time_ms": 49.70550537109375,
+        "frame_number": 0,
+        "neighbor_finding_time_ms": 5065.299987792969,
+        "analysis_time_ms": 9591.80760383606,
+        "number_nodes": 96000
+      }
+    }
+  ]
+}

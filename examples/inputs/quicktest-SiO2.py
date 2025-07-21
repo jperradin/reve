@@ -12,7 +12,7 @@ config_general = c.GeneralSettings(
     project_name="example-SiO2",  # Project name
     export_directory="./examples/outputs/",  # Export directory
     file_location=path,  # File location
-    range_of_frames=(0, -1),  # Range of frames
+    range_of_frames=(0, 0),  # Range of frames
     apply_pbc=True,  # Apply periodic boundary conditions
     verbose=True,  # Verbose mode (if True, print title, progress bars, etc.)
     save_logs=True,  # Save logs    (save logs to export_directory/logs.txt)
@@ -33,9 +33,9 @@ config_lattice = c.LatticeSettings(
 # Analysis settings
 config_analysis = c.AnalysisSettings(
     with_all=False,
-    # with_neutron_structure_factor_fft=True,
+    with_neutron_structure_factor_fft=True,
     # with_pair_distribution_function=True,
-    with_bond_angular_distribution=True,
+    # with_bond_angular_distribution=True,
 )
 
 # Build Settings object
