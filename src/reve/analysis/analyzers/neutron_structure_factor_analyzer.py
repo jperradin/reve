@@ -1,4 +1,3 @@
-# jperradin/reve/jperradin-reve-2b272a7b360ba6cf2863f0b77d96e53e958e144b/src/reve/analysis/analyzers/neutron_structure_factor_analyzer.py
 from typing import List, Dict
 from ...core.frame import Frame
 from ...core.system import Settings
@@ -61,7 +60,9 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
             return
 
         # Initialize a dictionary to hold the sum of structure factors
-        nsf_sum = {key: np.zeros_like(self.nsf_data[0][key]) for key in self.nsf_data[0].keys()}
+        nsf_sum = {
+            key: np.zeros_like(self.nsf_data[0][key]) for key in self.nsf_data[0].keys()
+        }
 
         # Sum the structure factors from all frames
         for nsf_frame in self.nsf_data:
@@ -320,3 +321,4 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
             if progress_proxy is not None:
                 progress_proxy.update(1)
         return qcos, qsin
+
