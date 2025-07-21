@@ -75,6 +75,7 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         return self.nsf
 
     def print_to_file(self) -> None:
+        self.finalize()
         if self.nsf is None:
             return
         output_path = os.path.join(

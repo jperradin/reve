@@ -63,6 +63,9 @@ class AnalysisSettings:
     with_pair_distribution_function: bool = (
         False  # Whether to calculate the pair distribution functions.
     )
+    with_bond_angular_distribution: bool = (
+        False  # Whether to calculate the bond angular distribution
+    )
     with_neutron_structure_factor: bool = (
         False  # Whether to calculate the neutron structure factor
     )
@@ -79,6 +82,8 @@ class AnalysisSettings:
         analyzers = []
         if self.with_pair_distribution_function:
             analyzers.append("PairDistributionFunctionAnalyzer")
+        if self.with_bond_angular_distribution:
+            analyzers.append("BondAngularDistributionAnalyzer")
         if self.with_neutron_structure_factor:
             analyzers.append("NeutronStructureFactorAnalyzer")
         if self.with_neutron_structure_factor_fft:
@@ -98,6 +103,11 @@ class AnalysisSettings:
                 elif (
                     not self.with_pair_distribution_function
                     and key == "with_pair_distribution_function"
+                ):
+                    continue
+                elif (
+                    not self.with_bond_angular_distribution
+                    and key == "with_bond_angular_distribution"
                 ):
                     continue
                 elif (

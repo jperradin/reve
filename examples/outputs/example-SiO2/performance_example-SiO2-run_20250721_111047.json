@@ -1,0 +1,77 @@
+{
+  "id": "2119c197-520e-4f1d-8424-7773d62c4b49",
+  "name": "example-SiO2-run_20250721_111047",
+  "timestamp": "2025-07-21T11:10:47.233373",
+  "execution_time_ms": 54139.92166519165,
+  "memory_usage_mb": 262.390625,
+  "cpu_usage_percent": 782.1,
+  "metrics": {
+    "scan_trajectory_time_ms": 0.8924007415771484,
+    "frame_number": 10,
+    "neighbor_finding_time_ms": 28.924942016601562,
+    "analysis_time_ms": 64.22924995422363,
+    "number_nodes": 1008,
+    "total_frames_processed": 11,
+    "memory_increase_mb": 51.37109375,
+    "avg_frame_time_ms": 4390.146884051236,
+    "avg_neighbor_time_ms": 38.83637081493031,
+    "avg_analysis_time_ms": 4323.254910382358,
+    "avg_number_nodes": 1008.0
+  },
+  "history": [
+    {
+      "timestamp": "2025-07-21T11:10:47.235229",
+      "execution_time_ms": null,
+      "memory_usage_mb": null,
+      "cpu_usage_percent": null,
+      "metrics": {
+        "scan_trajectory_time_ms": 0.8924007415771484
+      }
+    },
+    {
+      "timestamp": "2025-07-21T11:11:36.320541",
+      "execution_time_ms": 47043.01857948303,
+      "memory_usage_mb": 253.890625,
+      "cpu_usage_percent": 0.0,
+      "metrics": {
+        "scan_trajectory_time_ms": 0.8924007415771484,
+        "frame_number": 0,
+        "neighbor_finding_time_ms": 38.62714767456055,
+        "analysis_time_ms": 46800.790786743164,
+        "number_nodes": 1008
+      }
+    },
+    {
+      "timestamp": "2025-07-21T11:11:41.372214",
+      "execution_time_ms": 151.48425102233887,
+      "memory_usage_mb": 262.390625,
+      "cpu_usage_percent": 104.1,
+      "metrics": {
+        "scan_trajectory_time_ms": 0.8924007415771484,
+        "frame_number": 10,
+        "neighbor_finding_time_ms": 28.924942016601562,
+        "analysis_time_ms": 64.22924995422363,
+        "number_nodes": 1008
+      }
+    },
+    {
+      "timestamp": "2025-07-21T11:11:41.373477",
+      "execution_time_ms": 54139.92166519165,
+      "memory_usage_mb": 262.390625,
+      "cpu_usage_percent": 782.1,
+      "metrics": {
+        "scan_trajectory_time_ms": 0.8924007415771484,
+        "frame_number": 10,
+        "neighbor_finding_time_ms": 28.924942016601562,
+        "analysis_time_ms": 64.22924995422363,
+        "number_nodes": 1008,
+        "total_frames_processed": 11,
+        "memory_increase_mb": 51.37109375,
+        "avg_frame_time_ms": 4390.146884051236,
+        "avg_neighbor_time_ms": 38.83637081493031,
+        "avg_analysis_time_ms": 4323.254910382358,
+        "avg_number_nodes": 1008.0
+      }
+    }
+  ]
+}

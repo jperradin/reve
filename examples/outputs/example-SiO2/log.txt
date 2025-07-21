@@ -38,6 +38,6 @@ __version__ ➜  0.0.1
         Analysis Settings:
         -----------------
 		|- overwrite: True
-		|- with_pair_distribution_function: True
+		|- with_bond_angular_distribution: True
         
         

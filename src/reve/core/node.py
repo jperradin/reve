@@ -415,6 +415,7 @@ class Node:
     correlation_length: Optional[float] = field(default=None, compare=True, repr=True)
     coordination: Optional[int] = field(default=None, compare=True, repr=True)
     other: Optional[List[str]] = field(default=None, compare=False, repr=False)
+    _ovito_selection_str: Optional[str] = field(default=None, compare=False, repr=False)
 
     _next_id = 0
     _atomic_mass_cache = {}  # Cache for atomic masses

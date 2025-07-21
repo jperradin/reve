@@ -34,7 +34,8 @@ config_lattice = c.LatticeSettings(
 config_analysis = c.AnalysisSettings(
     with_all=False,
     # with_neutron_structure_factor_fft=True,
-    with_pair_distribution_function=True,
+    # with_pair_distribution_function=True,
+    with_bond_angular_distribution=True,
 )
 
 # Build Settings object

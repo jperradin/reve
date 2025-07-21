@@ -9,6 +9,9 @@ from .analyzers.neutron_structure_factor_fft_analyzer import (
 from .analyzers.pair_distribution_function_analyzer import (
     PairDistributionFunctionAnalyzer,
 )
+from .analyzers.bond_angular_distribution_analyzer import (
+    BondAngularDistributionAnalyzer,
+)
 
 
 class AnalyzerFactory:
@@ -18,6 +21,7 @@ class AnalyzerFactory:
         self.register_analyzer(NeutronStructureFactorAnalyzer(settings))
         self.register_analyzer(NeutronStructureFactorFFTAnalyzer(settings))
         self.register_analyzer(PairDistributionFunctionAnalyzer(settings))
+        self.register_analyzer(BondAngularDistributionAnalyzer(settings))
 
     def register_analyzer(self, analyzer: BaseAnalyzer) -> None:
         self._analyzers[analyzer.__class__.__name__] = analyzer

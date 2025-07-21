@@ -77,6 +77,7 @@ class NeighborSearcher:
         new_distances = []
 
         node_pos = node.position
+        node._ovito_selection_str = ""
 
         for neighbor_idx in candidate_indices:
             neighbor = self._nodes[neighbor_idx]
@@ -101,10 +102,12 @@ class NeighborSearcher:
             if dist <= rcut:
                 new_neighbors.append(neighbor)
                 new_distances.append(dist)
+                node._ovito_selection_str += f"ParticleIndex=={neighbor.node_id}||"
 
         node.neighbors = new_neighbors
         node.distances = new_distances
         node.indices = [n.node_id for n in new_neighbors]
+        node._ovito_selection_str += "ParticleIndex==" + str(node.node_id)
 
     def _calculate_coordination(self, node: Node) -> None:
         """

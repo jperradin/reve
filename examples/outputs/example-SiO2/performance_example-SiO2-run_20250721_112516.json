@@ -1,0 +1,39 @@
+{
+  "id": "3348babd-9319-4e2e-9c2f-abe771fcab95",
+  "name": "example-SiO2-run_20250721_112516",
+  "timestamp": "2025-07-21T11:25:16.549501",
+  "execution_time_ms": 70597.3572731018,
+  "memory_usage_mb": 255.15234375,
+  "cpu_usage_percent": 0.0,
+  "metrics": {
+    "scan_trajectory_time_ms": 0.8881092071533203,
+    "frame_number": 0,
+    "neighbor_finding_time_ms": 70310.83941459656,
+    "analysis_time_ms": 101.39346122741699,
+    "number_nodes": 1008
+  },
+  "history": [
+    {
+      "timestamp": "2025-07-21T11:25:16.551324",
+      "execution_time_ms": null,
+      "memory_usage_mb": null,
+      "cpu_usage_percent": null,
+      "metrics": {
+        "scan_trajectory_time_ms": 0.8881092071533203
+      }
+    },
+    {
+      "timestamp": "2025-07-21T11:26:27.156042",
+      "execution_time_ms": 70597.3572731018,
+      "memory_usage_mb": 255.15234375,
+      "cpu_usage_percent": 0.0,
+      "metrics": {
+        "scan_trajectory_time_ms": 0.8881092071533203,
+        "frame_number": 0,
+        "neighbor_finding_time_ms": 70310.83941459656,
+        "analysis_time_ms": 101.39346122741699,
+        "number_nodes": 1008
+      }
+    }
+  ]
+}

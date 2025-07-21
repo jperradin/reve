@@ -68,6 +68,7 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
         return self.gr if self.gr is not None else {}
 
     def print_to_file(self) -> None:
+        self.finalize()
         if self.gr is None or self.r is None:
             return
         output_path = os.path.join(
