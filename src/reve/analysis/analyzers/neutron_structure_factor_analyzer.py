@@ -3,6 +3,7 @@ from ...core.frame import Frame
 from ...core.system import Settings
 from .base_analyzer import BaseAnalyzer
 from ...utils.aesthetics import remove_duplicate_lines
+from ...utils.geometry import calculate_components
 
 import numpy as np
 import os
@@ -173,20 +174,16 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
         for species in species_list:
             positions = self._atoms_data[species]
 
-            if self._settings.verbose:
-                with ProgressBar(
-                    total=len(positions),
-                    leave=False,
-                    colour="#00ffff",
-                    unit="atom",
-                    desc=f"Processing {species}",
-                ) as progress:
-                    cosd, sind = self._jit_calculate_components(
-                        q_vectors.qx, q_vectors.qy, q_vectors.qz, positions, progress
-                    )
-            else:
-                cosd, sind = self._jit_calculate_components(
-                    q_vectors.qx, q_vectors.qy, q_vectors.qz, positions, None
+            with ProgressBar(
+                total=len(positions),
+                leave=False,
+                colour="#00ffff",
+                unit="atom",
+                desc=f"Processing {species}",
+                disable=not self._settings.verbose,
+            ) as progress:
+                cosd, sind = calculate_components(
+                    q_vectors.qx, q_vectors.qy, q_vectors.qz, positions, progress
                 )
 
             qcos[species], qsin[species] = cosd, sind
@@ -310,17 +307,3 @@ class NeutronStructureFactorAnalyzer(BaseAnalyzer):
             binned_sf[pair] = sums / counts
 
         return binned_sf
-
-    @staticmethod
-    @njit(parallel=True, nogil=True, cache=True, fastmath=True)
-    def _jit_calculate_components(qx, qy, qz, positions, progress_proxy):
-        """JIT-compiled core loop to calculate cosine and sine components."""
-        qcos, qsin = np.zeros_like(qx), np.zeros_like(qx)
-        for i in prange(len(positions)):
-            pos = positions[i]
-            dot_product = qx * pos[0] + qy * pos[1] + qz * pos[2]
-            qcos += np.cos(dot_product)
-            qsin += np.sin(dot_product)
-            if progress_proxy is not None:
-                progress_proxy.update(1)
-        return qcos, qsin

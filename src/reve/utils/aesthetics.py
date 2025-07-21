@@ -144,4 +144,3 @@ def remove_duplicate_lines(filepath: str) -> None:
     with open(filepath, "w") as file:
         for line in unique_lines:
             file.write(line)
-

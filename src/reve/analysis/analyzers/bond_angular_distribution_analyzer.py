@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from itertools import combinations
+from tqdm import tqdm
 from typing import Dict, Optional, List
 
 from .base_analyzer import BaseAnalyzer
@@ -21,8 +22,9 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
         self.angle_data: list = []
         self.frame_count: int = 0
         self.angle_max: float = 180.0
-        self.d_angle: float = 1.0
-        self.bins: int = int(self.angle_max / self.d_angle)
+        self.bins: int = 800
+        self.d_angle: float = self.angle_max / self.bins
+
         # NOTE: This is temporary, this will go to the settings
         # Add any other triplets you want to analyze here
         self.triplets_to_analyze = ["O-Si-O", "Si-O-Si", "O-O-O", "Si-Si-Si"]
@@ -30,34 +32,50 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
     def analyze(self, frame: Frame) -> None:
         angles_for_frame = {triplet: [] for triplet in self.triplets_to_analyze}
 
-        for node in frame.nodes:
+        progress_bar_kwargs = {
+            "disable": not self._settings.verbose,
+            "leave": False,
+            "ncols": os.get_terminal_size().columns,
+            "colour": "blue",
+        }
+
+        progress_bar = tqdm(
+            enumerate(frame.nodes),
+            desc="Calculating angles ...",
+            unit="atom",
+            initial=0,
+            total=len(frame.nodes),
+            **progress_bar_kwargs,
+        )
+        for i, node in progress_bar:
             if len(node.neighbors) < 2:
                 continue
 
             for neighbor1, neighbor2 in combinations(node.neighbors, 2):
-                for triplet_type in self.triplets_to_analyze:
-                    central_atom, neighbor_atom1, neighbor_atom2 = triplet_type.split(
-                        "-"
-                    )
+                if neighbor1.node_id != neighbor2.node_id:
+                    for triplet_type in self.triplets_to_analyze:
+                        neighbor_atom1, central_atom, neighbor_atom2 = (
+                            triplet_type.split("-")
+                        )
 
-                    # Check if the triplet matches the one to be analyzed
-                    if node.symbol == central_atom and (
-                        (
-                            neighbor1.symbol == neighbor_atom1
-                            and neighbor2.symbol == neighbor_atom2
-                        )
-                        or (
-                            neighbor1.symbol == neighbor_atom2
-                            and neighbor2.symbol == neighbor_atom1
-                        )
-                    ):
-                        angle = calculate_pbc_angle(
-                            neighbor1.position,
-                            node.position,
-                            neighbor2.position,
-                            frame.lattice,
-                        )
-                        angles_for_frame[triplet_type].append(angle)
+                        # Check if the triplet matches the one to be analyzed
+                        if node.symbol == central_atom and (
+                            (
+                                neighbor1.symbol == neighbor_atom1
+                                and neighbor2.symbol == neighbor_atom2
+                            )
+                            or (
+                                neighbor1.symbol == neighbor_atom2
+                                and neighbor2.symbol == neighbor_atom1
+                            )
+                        ):
+                            angle = calculate_pbc_angle(
+                                neighbor1.position,
+                                node.position,
+                                neighbor2.position,
+                                frame.lattice,
+                            )
+                            angles_for_frame[triplet_type].append(angle)
 
         # Histogram the angles for the current frame
         histograms = {}
@@ -110,7 +128,7 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
         )
 
         with open(output_path, "w") as f:
-            header = f"# Angle\t" + "\t".join(self.angles.keys()) + "\n"
+            header = "# Angle\t" + "\t".join(self.angles.keys()) + "\n"
             f.write(header)
             for i in range(len(angle_bins)):
                 line = f"{angle_bins[i]:.2f}"

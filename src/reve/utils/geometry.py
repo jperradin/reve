@@ -1,8 +1,10 @@
 import numpy as np
-from numba import jit, prange
+from numba import njit, prange
+from numba_progress import ProgressBar
+from tqdm import tqdm, tqdm_pandas
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@njit(cache=True, fastmath=True)
 def wrap_position(position: np.ndarray, lattice: np.ndarray) -> np.ndarray:
     """Wrap position in a periodic lattice
     (ref: https://en.wikipedia.org/wiki/Fractional_coordinates#Relationship_between_fractional_and_Cartesian_coordinates)
@@ -32,9 +34,9 @@ def wrap_position(position: np.ndarray, lattice: np.ndarray) -> np.ndarray:
     return wrapped_position
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@njit(cache=True, fastmath=True, parallel=True)
 def wrap_positions(
-    positions: np.ndarray, lattice: np.ndarray, progress_proxy
+    positions: np.ndarray, lattice: np.ndarray, progress_proxy: ProgressBar
 ) -> np.ndarray:
     """Wrap positions in a periodic lattice
     (ref: https://en.wikipedia.org/wiki/Fractional_coordinates#Relationship_between_fractional_and_Cartesian_coordinates)
@@ -51,7 +53,7 @@ def wrap_positions(
     lattice_inv = np.linalg.inv(lattice)
     lattice_inv = np.ascontiguousarray(lattice_inv)
 
-    for i in range(positions.shape[0]):
+    for i in prange(positions.shape[0]):
         position = np.ascontiguousarray(positions[i])
 
         fractional_position = np.dot(position, lattice_inv)
@@ -71,13 +73,13 @@ def wrap_positions(
     return wrapped_positions
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@njit(cache=True, fastmath=True)
 def calculate_direct_distance(position1: np.ndarray, position2: np.ndarray) -> float:
     """Return the distance for a given pair of positions in a direct space."""
     return np.linalg.norm(position1 - position2)
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@njit(cache=True, fastmath=True)
 def calculate_pbc_distance(
     position1: np.ndarray, position2: np.ndarray, lattice: np.ndarray
 ) -> float:
@@ -107,7 +109,7 @@ def calculate_pbc_distance(
     return np.linalg.norm(min_disp)
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@njit(cache=True, fastmath=True)
 def calculate_direct_angle(
     position1: np.ndarray, position2: np.ndarray, position3: np.ndarray
 ) -> float:
@@ -123,38 +125,38 @@ def calculate_direct_angle(
     return angle_deg
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@njit(cache=True, fastmath=True)
 def calculate_pbc_angle(
-    position1: np.ndarray,
-    position2: np.ndarray,
-    position3: np.ndarray,
+    neighbor1_pos: np.ndarray,
+    central_pos: np.ndarray,
+    neighbor2_pos: np.ndarray,
     lattice: np.ndarray,
 ) -> float:
-    """Return the angle formed by two vectors (three positions) in a periodic space.
-    (ref: https://en.wikipedia.org/wiki/Fractional_coordinates#Relationship_between_fractional_and_Cartesian_coordinates)
+    """Return the angle formed by neighbor1-central-neighbor2 in a periodic space.
 
     Args:
-        position1 (np.ndarray): The first position
-        position2 (np.ndarray): The second position
-        position3 (np.ndarray): The third position
-        lattice (np.ndarray): The lattice of the system
+        neighbor1_pos (np.ndarray): Position of the first neighbor
+        central_pos (np.ndarray): Position of the central atom (vertex of the angle)
+        neighbor2_pos (np.ndarray): Position of the second neighbor
+        lattice (np.ndarray): The lattice matrix of the system (3x3)
 
     Returns:
-        float: The angle formed by the two vectors in degrees
+        float: The angle formed at the central atom in degrees
     """
-    # Calculate the direct displacement vectors assuming position2 is the center
-    direct_disp1 = position1 - position2
-    direct_disp2 = position2 - position3
+    # Calculate displacement vectors FROM central TO neighbors
+    direct_disp1 = neighbor1_pos - central_pos
+    direct_disp2 = neighbor2_pos - central_pos
 
     # Get fractional coordinates in the lattice
     inv_lattice = np.linalg.inv(lattice)
     frac_disp1 = np.dot(inv_lattice, direct_disp1)
     frac_disp2 = np.dot(inv_lattice, direct_disp2)
 
-    # Minimum image convention
+    # Apply minimum image convention
     frac_disp1 -= np.round(frac_disp1)
     frac_disp2 -= np.round(frac_disp2)
 
+    # Convert back to Cartesian coordinates
     min_disp1 = np.dot(frac_disp1, lattice)
     min_disp2 = np.dot(frac_disp2, lattice)
 
@@ -163,9 +165,9 @@ def calculate_pbc_angle(
     norm1 = np.linalg.norm(min_disp1)
     norm2 = np.linalg.norm(min_disp2)
 
-    # cos_angle = np.clip(dot_product / (norm1 * norm2), -1.0, 1.0)
+    # Clamp to avoid numerical errors with arccos
     cos_angle = dot_product / (norm1 * norm2)
-    cos_angle = max(-1.0, min(1.0, cos_angle))  # equivalent to np.clip
+    cos_angle = max(-1.0, min(1.0, cos_angle))
 
     angle_rad = np.arccos(cos_angle)
     angle_deg = np.degrees(angle_rad)
@@ -201,7 +203,7 @@ def fractional_to_cartesian(position: np.ndarray, lattice: np.ndarray) -> np.nda
     return np.dot(position, lattice)
 
 
-@jit(nopython=True, cache=True, fastmath=True)
+@njit(cache=True, fastmath=True)
 def calculate_gyration_radius(
     positions: np.ndarray, center_of_mass: np.ndarray
 ) -> float:
@@ -232,6 +234,110 @@ def calculate_gyration_radius(
     return np.sqrt(rg_squared / n_nodes)
 
 
+@njit(cache=True, fastmath=True, parallel=True)
+def calculate_pbc_distances_batch(
+    pos1_batch: np.ndarray,
+    pos2_batch: np.ndarray,
+    lattice: np.ndarray,
+    r_max: float,
+    progress_proxy: ProgressBar,
+) -> np.ndarray:
+    """Calculate PBC distances for batches of position pairs."""
+    inv_lattice = np.linalg.inv(lattice)
+    distances = np.empty(pos1_batch.shape[0], dtype=np.float64)
+
+    for i in prange(pos1_batch.shape[0]):
+        # Calculate direct displacement
+        direct_disp = pos1_batch[i] - pos2_batch[i]
+        # Get fractional coordinates
+        frac_disp = inv_lattice @ direct_disp
+        # Minimum image convention
+        frac_disp = frac_disp - np.round(frac_disp)
+        min_disp = frac_disp @ lattice
+        distances[i] = np.sqrt(np.sum(min_disp * min_disp))
+        if progress_proxy is not None:
+            progress_proxy.update(1)
+
+    return distances
+
+
+@njit(cache=True, fastmath=True)
+def fast_histogram(distances: np.ndarray, r_max: float, bins: int) -> np.ndarray:
+    """Fast histogram calculation using numba."""
+    hist = np.zeros(bins, dtype=np.int64)
+    dr = r_max / bins
+
+    for dist in distances:
+        if 0 < dist < r_max:
+            bin_idx = int(dist / dr)
+            if bin_idx < bins:
+                hist[bin_idx] += 1
+
+    return hist
+
+
+@njit(parallel=True, nogil=True, cache=True, fastmath=True)
+def calculate_components(qx, qy, qz, positions, progress_proxy):
+    """Loop to calculate cosine and sine components for S(q)."""
+    qcos, qsin = np.zeros_like(qx), np.zeros_like(qx)
+    for i in prange(len(positions)):
+        pos = positions[i]
+        dot_product = qx * pos[0] + qy * pos[1] + qz * pos[2]
+        qcos += np.cos(dot_product)
+        qsin += np.sin(dot_product)
+        if progress_proxy is not None:
+            progress_proxy.update(1)
+    return qcos, qsin
+
+
+def warmup_jit():
+    """
+    Warms up the JIT-compiled functions by calling them with dummy data.
+    """
+    # Dummy data
+    dummy_pos1 = np.array([1.0, 1.0, 1.0])
+    dummy_pos2 = np.array([2.0, 2.0, 2.0])
+    dummy_pos3 = np.array([3.0, 3.0, 3.0])
+    dummy_positions = np.array([dummy_pos1, dummy_pos2, dummy_pos3])
+    dummy_lattice = np.array([[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0]])
+    dummy_center_of_mass = np.array([2.0, 2.0, 2.0])
+    dummy_q = np.array([1.0, 1.0, 1.0])
+
+    # progress bar
+    progress_bar = tqdm(
+        desc="Compiling jitted functions ...",
+        total=10,
+        colour="magenta",
+        ascii=True,
+        leave=True,
+    )
+    # Call JIT functions to compile them
+    wrap_position(dummy_pos1, dummy_lattice)
+    progress_bar.update(1)
+    wrap_positions(dummy_positions, dummy_lattice, None)
+    progress_bar.update(1)
+    calculate_direct_distance(dummy_pos1, dummy_pos2)
+    progress_bar.update(1)
+    calculate_pbc_distance(dummy_pos1, dummy_pos2, dummy_lattice)
+    progress_bar.update(1)
+    calculate_direct_angle(dummy_pos1, dummy_pos2, dummy_pos3)
+    progress_bar.update(1)
+    calculate_pbc_angle(dummy_pos1, dummy_pos2, dummy_pos3, dummy_lattice)
+    progress_bar.update(1)
+    calculate_gyration_radius(dummy_positions, dummy_center_of_mass)
+    progress_bar.update(1)
+    calculate_pbc_distances_batch(
+        dummy_positions, dummy_positions, dummy_lattice, 10.0, None
+    )
+    progress_bar.update(1)
+    fast_histogram(np.array([1.0, 2.0, 3.0]), 10.0, 10)
+    progress_bar.update(1)
+    calculate_components(dummy_q, dummy_q, dummy_q, dummy_positions, None)
+    progress_bar.update(1)
+
+    progress_bar.close()
+
+
 __all__ = [
     "wrap_position",
     "wrap_positions",
@@ -240,4 +346,8 @@ __all__ = [
     "calculate_direct_angle",
     "calculate_pbc_angle",
     "calculate_gyration_radius",
+    "calculate_pbc_distances_batch",
+    "fast_histogram",
+    "calculate_components",
+    "warmup_jit",
 ]

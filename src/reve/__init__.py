@@ -24,3 +24,9 @@ from .main import main
 
 # Import version
 from .version import __version__
+
+# Import and run the JIT warmup
+from .utils.geometry import warmup_jit
+
+warmup_jit()
+
