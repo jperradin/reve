@@ -24,8 +24,8 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
         self.gr_data: list = []
         self.frame_count: int = 0
         self.r_max: float = 10.0
-        self.dr: float = 0.1
-        self.bins: int = int(self.r_max / self.dr)
+        self.bins: int = 800
+        self.dr: float = self.r_max / self.bins
 
     def _check_rmax(self, lattice: np.ndarray) -> None:
         """Ensures r_max is not larger than half the box size."""
@@ -40,6 +40,9 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
 
     def analyze(self, frame: Frame) -> None:
         self._atoms_data = frame.nodes_data.wrapped_positions
+        self._correlation_lengths: Dict[str, float] = (
+            frame.nodes_data.correlation_lengths
+        )
         self._check_rmax(lattice=frame.get_lattice())
         pairs = self._get_pairs(list(self._atoms_data.keys()))
         self.calculate_gr(pairs, frame)
@@ -158,6 +161,38 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
 
             self.gr[pair] = g_r
 
+        # Calculate the total pair distribution function with Faber-Ziman formalism
+        self.gr["total"] = np.zeros_like(self.gr[pairs[0]])
+
+        cl = self._correlation_lengths  # These are the neutron scattering lengths
+        species_list = sorted(self._atoms_data.keys())
+        species_counts = {s: len(self._atoms_data[s]) for s in species_list}
+        num_atoms = sum(species_counts.values())
+
+        concentrations = {s: species_counts[s] / num_atoms for s in species_list}
+
+        # Correct normalization for Faber-Ziman
+        b_avg = sum(concentrations[s] * cl[s] for s in species_list)
+        b_avg_gr = b_avg**2
+
+        for s1 in species_list:
+            self.gr["total"] += (
+                concentrations[s1] ** 2 * cl[s1] ** 2 * self.gr[f"{s1}-{s1}"]
+            )
+
+        for s1, s2 in combinations(species_list, 2):
+            pair_key = f"{s1}-{s2}"
+            self.gr["total"] += (
+                2
+                * concentrations[s1]
+                * concentrations[s2]
+                * cl[s1]
+                * cl[s2]
+                * self.gr[pair_key]
+            )
+
+        if b_avg_gr > 0:
+            self.gr["total"] /= b_avg_gr
+
         # Update self.r to be the bin centers for plotting
         self.r = r_mid
-
