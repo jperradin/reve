@@ -196,7 +196,10 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         cl = self._correlation_lengths  # These are the neutron scattering lengths
 
         concentrations = {s: species_counts[s] / num_atoms for s in species_list}
-        b_avg_sq = sum(concentrations[s] * cl[s] ** 2 for s in species_list)
+
+        # Correct normalization for Faber-Ziman
+        b_avg = sum(concentrations[s] * cl[s] for s in species_list)
+        b_avg_sq = b_avg**2
 
         for s1 in species_list:
             f_total += concentrations[s1] ** 2 * cl[s1] ** 2 * f_partial[f"{s1}-{s1}"]
