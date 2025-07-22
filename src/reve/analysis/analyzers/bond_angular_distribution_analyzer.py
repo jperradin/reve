@@ -6,7 +6,6 @@ from typing import Dict, Optional, List
 
 from .base_analyzer import BaseAnalyzer
 from ...core.frame import Frame
-from ...core.node import Node
 from ...config.settings import Settings
 from ...utils.geometry import calculate_pbc_angle
 
@@ -24,10 +23,9 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
         self.angle_max: float = 180.0
         self.bins: int = 800
         self.d_angle: float = self.angle_max / self.bins
-
-        # NOTE: This is temporary, this will go to the settings
-        # Add any other triplets you want to analyze here
-        self.triplets_to_analyze = ["O-Si-O", "Si-O-Si", "O-O-O", "Si-Si-Si"]
+        self.triplets_to_analyze = (
+            self._settings.analysis.bad_settings.triplets_to_calculate
+        )
 
     def analyze(self, frame: Frame) -> None:
         angles_for_frame = {triplet: [] for triplet in self.triplets_to_analyze}

@@ -33,6 +33,9 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
         self.r_max: float = 10.0
         self.bins: int = 800
         self.dr: float = self.r_max / self.bins
+        self.pairs_to_calculate = (
+            self._settings.analysis.pdf_settings.pairs_to_calculate
+        )
 
         # Pre-compute commonly used arrays
         self._shell_volumes: Optional[np.ndarray] = None
@@ -103,6 +106,9 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
 
         # Use numpy for efficient file writing
         keys = list(self.gr.keys())
+        for key in keys:
+            if key not in self.pairs_to_calculate:
+                keys.remove(key)
         header = "r\t" + "\t".join(keys)
         data = np.column_stack([self.r] + [self.gr[key] for key in keys])
 

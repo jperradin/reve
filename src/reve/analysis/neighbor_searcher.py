@@ -25,7 +25,10 @@ class NeighborSearcher:
         self._max_cutoff: float = self.settings.get_max_cutoff()
 
     def execute(self) -> None:
-        positions = self.frame.get_wrapped_positions()
+        if self.settings.wrap_position:
+            positions = self.frame.get_wrapped_positions()
+        else:
+            positions = self.frame.get_positions()
 
         # Build the k-d tree, handling periodic boundary conditions
         if self.settings.apply_pbc:
@@ -132,4 +135,3 @@ class NeighborSearcher:
             )
         else:
             node.set_coordination(len([n for n in node.neighbors if n.symbol == mode]))
-

@@ -5,6 +5,45 @@ from typing import Tuple, Optional, List
 
 
 @dataclass
+class PDFAnalysisSettings:
+    """Settings specific to the PairDistributionFunctionAnalyzer"""
+
+    r_max: float = 10.0
+    bins: int = 800
+    pairs_to_calculate: List[str] = field(default_factory=lambda: [""])
+
+    def __str__(self) -> str:
+        line = "\t\t|- pdf_settings:\n"
+        line += f"\t\t  |- r_max = {self.r_max}\n"
+        line += f"\t\t  |- bins = {self.bins}\n"
+        line += f"\t\t  |- pairs_to_calculate = \n\t\t    {self.pairs_to_calculate}"
+        return line
+
+
+@dataclass
+class BADAnalysisSettings:
+    """Settings specific to the BondAngularDistributionAnalyzer"""
+
+    bins: int = 800
+    triplets_to_calculate: List[str] = field(default_factory=lambda: [""])
+
+    def __str__(self) -> str:
+        line = "\t\t|- bad_settings:\n"
+        line += f"\t\t  |- bins = {self.bins}\n"
+        line += (
+            f"\t\t  |- triplets_to_calculate = \n\t\t    {self.triplets_to_calculate}"
+        )
+        return line
+
+
+@dataclass
+class SQFFTAnalysisSettings:
+    """Settings specific to the NeutronStructureFactorFFTAnalyzer"""
+
+    grid_size_max: int = 512
+
+
+@dataclass
 class Cutoff:
     """
     Cutoff that contains all the cutoffs.
@@ -33,20 +72,27 @@ class GeneralSettings:
     Attributes:
     """
 
-    project_name: str = "Project"  # Name of the project
-    export_directory: str = "exports"  # Directory to export results
-    file_location: str = ""  # Path to the trajectory file
-    range_of_frames: Tuple[int, int] = (
-        0,
-        -1,
-    )  # Range of frames to process (0 to -1 = all frames)
-    apply_pbc: bool = False  # Whether to apply periodic boundary conditions
-    verbose: bool = (
-        False  # Whether to print settings, progress bars and other information
-    )
-    save_logs: bool = False  # Whether to save logs
-    save_performance: bool = False  # Whether to save performance
-    cutoffs: List[Cutoff] = field(default_factory=lambda: [])  # Cutoffs for distance
+    # Name of the project
+    project_name: str = "Project"
+    # Directory to export results
+    export_directory: str = "exports"
+    # Path to the trajectory file
+    file_location: str = ""
+    # Range of frames to process (0 to -1 = all frames)
+    range_of_frames: Tuple[int, int] = (0, -1)
+    # Whether to apply periodic boundary conditions
+    apply_pbc: bool = False
+    # Whether to wrap positions systematically
+    wrap_position: bool = True
+    # Whether to print settings, progress bars and other information
+    verbose: bool = False
+    # Whether to save logs
+    save_logs: bool = False
+    # Whether to save performance
+    save_performance: bool = False
+    # Cutoffs for distance
+    cutoffs: List[Cutoff] = field(default_factory=lambda: [])
+    # Coordination mode
     coordination_mode: str = "all_types"
 
 
@@ -58,25 +104,21 @@ class AnalysisSettings:
     Attributes:
     """
 
-    overwrite: bool = True  # Whether to overwrite the existing file, if False, appends results to the file
-    with_all: bool = False  # Whether to calculate all the properties
-    with_pair_distribution_function: bool = (
-        False  # Whether to calculate the pair distribution functions.
-    )
-    with_bond_angular_distribution: bool = (
-        False  # Whether to calculate the bond angular distribution
-    )
-    with_neutron_structure_factor: bool = (
-        False  # Whether to calculate the neutron structure factor
-    )
-    with_neutron_structure_factor_fft: bool = (
-        False  # Whether to calculate the neutron structure factor via fft
-    )
-
-    # PairDistributionFunctionAnalyzer settings
-    # r_max: float = 10.0
-    # dr: float = 0.1
-    # nbins: int = 600
+    # Whether to overwrite the existing file, if False, appends results to the file
+    overwrite: bool = True
+    # Whether to calculate all the properties
+    with_all: bool = False
+    # Whether to calculate the pair distribution functions.
+    with_pair_distribution_function: bool = False
+    pdf_settings: Optional[PDFAnalysisSettings] = None
+    # Whether to calculate the bond angular distribution
+    with_bond_angular_distribution: bool = False
+    bad_settings: Optional[BADAnalysisSettings] = None
+    # Whether to calculate the neutron structure factor
+    with_neutron_structure_factor: bool = False
+    # Whether to calculate the neutron structure factor via fft
+    with_neutron_structure_factor_fft: bool = False
+    sqfft_settings: Optional[SQFFTAnalysisSettings] = None
 
     def get_analyzers(self) -> List[str]:
         analyzers = []
@@ -97,29 +139,35 @@ class AnalysisSettings:
     def __str__(self) -> str:
         lines = []
         for key, value in self.__dict__.items():
+            hold = key, value
             if value is not None:
                 if not self.with_all and key == "with_all":
                     continue
-                elif (
-                    not self.with_pair_distribution_function
-                    and key == "with_pair_distribution_function"
+                if not self.with_pair_distribution_function and (
+                    key == "with_pair_distribution_function" or key == "pdf_settings"
                 ):
                     continue
-                elif (
-                    not self.with_bond_angular_distribution
-                    and key == "with_bond_angular_distribution"
+                if not self.with_bond_angular_distribution and (
+                    key == "with_bond_angular_distribution" or key == "bad_settings"
                 ):
                     continue
-                elif (
+                if (
                     not self.with_neutron_structure_factor
                     and key == "with_neutron_structure_factor"
                 ):
                     continue
-                elif (
-                    not self.with_neutron_structure_factor_fft
-                    and key == "with_neutron_structure_factor_fft"
+                if not self.with_neutron_structure_factor_fft and (
+                    key == "with_neutron_structure_factor_fft"
+                    or key == "sqfft_settings"
                 ):
                     continue
+                if self.with_pair_distribution_function and key == "pdf_settings":
+                    lines.append(str(self.pdf_settings))
+                    continue
+                if self.with_bond_angular_distribution and key == "bad_settings":
+                    lines.append(str(self.bad_settings))
+                    continue
+
                 lines.append(f"\t\t|- {key}: {value}")
         output = """
         Analysis Settings:
@@ -203,6 +251,7 @@ class Settings:
     file_location: str = "./"
     range_of_frames: Tuple[int, int] = (0, -1)
     apply_pbc: bool = True
+    wrap_position: bool = True
     verbose: bool = False
     save_logs: bool = False
     save_performance: bool = False
@@ -306,6 +355,25 @@ class SettingsBuilder:
     def with_analysis(self, analysis: AnalysisSettings):
         if not isinstance(analysis, AnalysisSettings):
             raise ValueError(f"Invalid analysis settings: {analysis}")
+        if analysis.with_bond_angular_distribution and analysis.bad_settings is None:
+            # Create a default BADAnalysisSettings object if not created
+            bad_settings = BADAnalysisSettings(
+                triplets_to_calculate=["O-O-O", "O-Si-O", "Si-O-Si", "Si-Si-Si"]
+            )
+            analysis.bad_settings = bad_settings
+        if analysis.with_pair_distribution_function and analysis.pdf_settings is None:
+            # Create a default PDFAnalysisSettings object if not created
+            pdf_settings = PDFAnalysisSettings(
+                pairs_to_calculate=["O-O", "O-Si", "Si-Si", "total"]
+            )
+            analysis.pdf_settings = pdf_settings
+        if (
+            analysis.with_neutron_structure_factor_fft
+            and analysis.sqfft_settings is None
+        ):
+            # Create a SQFFTAnalysisSettings object if not create
+            sqfft_settings = SQFFTAnalysisSettings()
+            analysis.sqfft_settings = sqfft_settings
         self._settings.analysis = analysis
         return self
 
@@ -319,4 +387,8 @@ __all__ = [
     AnalysisSettings,
     LatticeSettings,
     Cutoff,
+    GeneralSettings,
+    PDFAnalysisSettings,
+    BADAnalysisSettings,
+    SQFFTAnalysisSettings,
 ]
