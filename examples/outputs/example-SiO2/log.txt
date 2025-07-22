@@ -17,11 +17,11 @@ __version__ ➜  0.0.1
         ----------------
 	|- project_name: example-SiO2
 	|- export_directory: ./examples/outputs/example-SiO2
-	|- file_location: ./examples/inputs/example-SiO2-96000at.xyz
+	|- file_location: ./examples/inputs/example-SiO2-1008at.xyz
 	|- range_of_frames: (0, -1)
 	|- apply_pbc: True
 	|- wrap_position: True
-	|- verbose: False
+	|- verbose: True
 	|- save_logs: True
 	|- save_performance: True
 	|- coordination_mode: different_type
@@ -39,6 +39,10 @@ __version__ ➜  0.0.1
         Analysis Settings:
         -----------------
 		|- overwrite: True
-		|- with_all: True
+		|- with_connectivity: True
+		|- connect_settings:
+		  |- networking_species = 
+		    Si		  |- bridging_species = 
+		    O
         
         

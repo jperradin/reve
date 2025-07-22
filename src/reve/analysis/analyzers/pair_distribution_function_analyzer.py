@@ -30,12 +30,27 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
         self.gr: Optional[Dict[str, np.ndarray]] = None
         self._atoms_data: Optional[Dict[str, np.ndarray]] = None
         self.gr_data: List[Dict[str, np.ndarray]] = []
-        self.frame_count: int = 0
-        self.r_max: float = 10.0
-        self.bins: int = 800
-        self.dr: float = self.r_max / self.bins
+
+        # PDFAnalysisSettings
+        self.r_max: float = (
+            self._settings.analysis.pdf_settings.r_max
+            if self._settings.analysis.pdf_settings is not None
+            else 10.0
+        )
+        self.bins: int = (
+            self._settings.analysis.pdf_settings.bins
+            if self._settings.analysis.pdf_settings is not None
+            else 800
+        )
+        self.dr: float = (
+            self.r_max / self.bins
+            if self._settings.analysis.pdf_settings is not None
+            else 10.0 / 800
+        )
         self.pairs_to_calculate = (
             self._settings.analysis.pdf_settings.pairs_to_calculate
+            if self._settings.analysis.pdf_settings is not None
+            else ["O-O", "O-Si", "Si-Si", "total"]
         )
 
         # Pre-compute commonly used arrays
@@ -77,10 +92,10 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
         self.calculate_gr(pairs, frame)
         if self.gr is not None:
             self.gr_data.append(dict(self.gr))  # Make a copy
-            self.frame_count += 1
+            self.frame_processed_count += 1
 
     def finalize(self) -> None:
-        if self.frame_count == 0:
+        if self.frame_processed_count == 0:
             return
 
         # Vectorized averaging across frames

@@ -44,6 +44,32 @@ class SQFFTAnalysisSettings:
 
 
 @dataclass
+class STRUNITSAnalysisSettings:
+    """Settings specific to the StructuralUnitsAnalyzer"""
+
+    units_to_calculate: List[str] = field(default_factory=lambda: [""])
+
+    def __str__(self) -> str:
+        line = "\t\t|- strunits_settings:\n"
+        line += f"\t\t  |- units_to_calculate = \n\t\t    {self.units_to_calculate}"
+        return line
+
+
+@dataclass
+class CONNAnalysisSettings:
+    """Settings specific to the ConnectivityAnalyzer"""
+
+    networking_species: str = ""
+    bridging_species: str = ""
+
+    def __str__(self) -> str:
+        line = "\t\t|- connect_settings:\n"
+        line += f"\t\t  |- networking_species = \n\t\t    {self.networking_species}"
+        line += f"\t\t  |- bridging_species = \n\t\t    {self.bridging_species}"
+        return line
+
+
+@dataclass
 class Cutoff:
     """
     Cutoff that contains all the cutoffs.
@@ -119,6 +145,12 @@ class AnalysisSettings:
     # Whether to calculate the neutron structure factor via fft
     with_neutron_structure_factor_fft: bool = False
     sqfft_settings: Optional[SQFFTAnalysisSettings] = None
+    # Whether to calculate the structural units
+    with_structural_units: bool = False
+    strunits_settings: Optional[STRUNITSAnalysisSettings] = None
+    # Whether to calculate the conncetivities
+    with_connectivity: bool = False
+    connect_settings: Optional[CONNAnalysisSettings] = None
 
     def get_analyzers(self) -> List[str]:
         analyzers = []
@@ -133,10 +165,16 @@ class AnalysisSettings:
             # analyzers.append("NeutronStructureFactorAnalyzer")
         if self.with_neutron_structure_factor_fft:
             analyzers.append("NeutronStructureFactorFFTAnalyzer")
+        if self.with_structural_units:
+            analyzers.append("StructuralUnitsAnalyzer")
+        if self.with_connectivity:
+            analyzers.append("ConnectivityAnalyzer")
         if self.with_all:
             analyzers.append("PairDistributionFunctionAnalyzer")
             analyzers.append("BondAngularDistributionAnalyzer")
             analyzers.append("NeutronStructureFactorFFTAnalyzer")
+            analyzers.append("StructuralUnitsAnalyzer")
+            analyzers.append("ConnectivityAnalyzer")
             # analyzers.append("NeutronStructureFactorAnalyzer")
         return analyzers
 
@@ -165,6 +203,14 @@ class AnalysisSettings:
                     or key == "sqfft_settings"
                 ):
                     continue
+                if not self.with_structural_units and (
+                    key == "with_structural_units" or key == "strunits_settings"
+                ):
+                    continue
+                if not self.with_connectivity and (
+                    key == "with_connectivity" or key == "connect_settings"
+                ):
+                    continue
                 if (
                     self.with_pair_distribution_function or self.with_all
                 ) and key == "pdf_settings":
@@ -174,6 +220,16 @@ class AnalysisSettings:
                     self.with_bond_angular_distribution or self.with_all
                 ) and key == "bad_settings":
                     lines.append(str(self.bad_settings))
+                    continue
+                if (
+                    self.with_structural_units or self.with_all
+                ) and key == "strunits_settings":
+                    lines.append(str(self.strunits_settings))
+                    continue
+                if (
+                    self.with_connectivity or self.with_all
+                ) and key == "connect_settings":
+                    lines.append(str(self.connect_settings))
                     continue
 
                 lines.append(f"\t\t|- {key}: {value}")
@@ -386,6 +442,29 @@ class SettingsBuilder:
             # Create a SQFFTAnalysisSettings object if not create
             sqfft_settings = SQFFTAnalysisSettings()
             analysis.sqfft_settings = sqfft_settings
+        if analysis.with_structural_units and analysis.strunits_settings is None:
+            # Create a SQFFTAnalysisSettings object if not create
+            strunits_settings = STRUNITSAnalysisSettings(
+                units_to_calculate=[
+                    "SiO4",
+                    "SiO5",
+                    "SiO6",
+                    "SiO7",
+                    "OSi1",
+                    "OSi2",
+                    "OSi3",
+                    "OSi4",
+                ]
+            )
+            analysis.strunits_settings = strunits_settings
+        if analysis.with_connectivity and analysis.connect_settings is None:
+            # Create a SQFFTAnalysisSettings object if not create
+            connect_settings = CONNAnalysisSettings(
+                networking_species="Si",
+                bridging_species="O",
+            )
+            analysis.connect_settings = connect_settings
+
         self._settings.analysis = analysis
         return self
 
@@ -403,4 +482,5 @@ __all__ = [
     PDFAnalysisSettings,
     BADAnalysisSettings,
     SQFFTAnalysisSettings,
+    STRUNITSAnalysisSettings,
 ]

@@ -34,7 +34,6 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         self.q_max = 10.0
         self.q_bins = 100
         self.nsf_data = []
-        self.frame_count = 0
 
     def analyze(self, frame: Frame) -> None:
         self._atoms_data = frame.nodes_data.wrapped_positions
@@ -52,10 +51,10 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
         pairs = self._get_pairs(list(self._atoms_data.keys()))
         self.calculate_s_q_fft(pairs, frame)
         self.nsf_data.append(self.nsf)
-        self.frame_count += 1
+        self.frame_processed_count += 1
 
     def finalize(self) -> None:
-        if self.frame_count == 0:
+        if self.frame_processed_count == 0:
             return
 
         # Initialize a dictionary to hold the sum of structure factors
@@ -69,7 +68,9 @@ class NeutronStructureFactorFFTAnalyzer(BaseAnalyzer):
                 nsf_sum[key] += value
 
         # Calculate the average
-        self.nsf = {key: value / self.frame_count for key, value in nsf_sum.items()}
+        self.nsf = {
+            key: value / self.frame_processed_count for key, value in nsf_sum.items()
+        }
 
     def get_result(self) -> dict[str, float]:
         return self.nsf

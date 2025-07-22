@@ -3,9 +3,9 @@ from reve import SettingsBuilder, main
 import reve.config.settings as c
 
 # Path to the trajectory file
-# path = "./examples/inputs/example-SiO2-1008at.xyz"
+path = "./examples/inputs/example-SiO2-1008at.xyz"
 # path = "./examples/inputs/example-SiO2.xyz"
-path = "./examples/inputs/example-SiO2-96000at.xyz"
+# path = "./examples/inputs/example-SiO2-96000at.xyz"
 
 # General settings
 config_general = c.GeneralSettings(
@@ -14,7 +14,7 @@ config_general = c.GeneralSettings(
     file_location=path,  # File location
     range_of_frames=(0, -1),  # Range of frames
     apply_pbc=True,  # Apply periodic boundary conditions
-    verbose=False,  # Verbose mode (if True, print title, progress bars, etc.)
+    verbose=True,  # Verbose mode (if True, print title, progress bars, etc.)
     save_logs=True,  # Save logs    (save logs to export_directory/logs.txt)
     save_performance=True,  # Save performance (save performance data to export_directory/performance...json)
     cutoffs=[
@@ -32,7 +32,8 @@ config_lattice = c.LatticeSettings(
 
 # Analysis settings
 config_analysis = c.AnalysisSettings(
-    with_all=True,
+    # with_all=True,
+    with_connectivity=True,
 )
 
 # Build Settings object

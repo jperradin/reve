@@ -19,12 +19,23 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
         super().__init__(settings)
         self.angles: Optional[Dict[str, np.ndarray]] = None
         self.angle_data: list = []
-        self.frame_count: int = 0
         self.angle_max: float = 180.0
-        self.bins: int = 800
-        self.d_angle: float = self.angle_max / self.bins
+
+        # BADAnalysisSettings
+        self.bins: int = (
+            self._settings.analysis.bad_settings.bins
+            if self._settings.analysis.bad_settings is not None
+            else 800
+        )
+        self.d_angle: float = (
+            self.angle_max / self.bins
+            if self._settings.analysis.bad_settings is not None
+            else 180.0 / 800
+        )
         self.triplets_to_analyze = (
             self._settings.analysis.bad_settings.triplets_to_calculate
+            if self._settings.analysis.bad_settings is not None
+            else ["O-O-O", "O-Si-O", "Si-O-Si", "Si-Si-Si"]
         )
 
     def analyze(self, frame: Frame) -> None:
@@ -85,10 +96,10 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
 
         if histograms:
             self.angle_data.append(histograms)
-            self.frame_count += 1
+            self.frame_processed_count += 1
 
     def finalize(self) -> None:
-        if self.frame_count == 0:
+        if self.frame_processed_count == 0:
             return
 
         # Sum the histograms from all frames

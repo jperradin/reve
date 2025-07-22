@@ -12,6 +12,8 @@ from .analyzers.pair_distribution_function_analyzer import (
 from .analyzers.bond_angular_distribution_analyzer import (
     BondAngularDistributionAnalyzer,
 )
+from .analyzers.structural_units_analyzer import StructuralUnitsAnalyzer
+from .analyzers.connectivity_analyzer import ConnectivityAnalyzer
 
 
 class AnalyzerFactory:
@@ -22,6 +24,8 @@ class AnalyzerFactory:
         self.register_analyzer(NeutronStructureFactorFFTAnalyzer(settings))
         self.register_analyzer(PairDistributionFunctionAnalyzer(settings))
         self.register_analyzer(BondAngularDistributionAnalyzer(settings))
+        self.register_analyzer(StructuralUnitsAnalyzer(settings))
+        self.register_analyzer(ConnectivityAnalyzer(settings))
 
     def register_analyzer(self, analyzer: BaseAnalyzer) -> None:
         self._analyzers[analyzer.__class__.__name__] = analyzer
