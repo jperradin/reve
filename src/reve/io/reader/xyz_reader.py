@@ -147,4 +147,10 @@ class XYZReader(BaseReader):
 
             data = {"symbol": symbols, "position": positions}
 
-            yield Frame(frame_id=frame_id, _data=data, lattice=lattice, nodes=[])
+            yield Frame(
+                frame_id=frame_id,
+                _data=data,
+                lattice=lattice,
+                nodes=[],
+                _settings=self._settings,
+            )

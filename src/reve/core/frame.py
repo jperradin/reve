@@ -5,6 +5,7 @@ from numba_progress import ProgressBar
 
 from .node import Node
 from ..utils.geometry import wrap_positions
+from ..config.settings import Settings
 
 
 @dataclass(slots=True)
@@ -42,6 +43,7 @@ class Frame:
     lattice: np.ndarray
     nodes_data: NodesData = field(default_factory=NodesData)
     _data: Dict[str, np.ndarray] | None = None
+    _settings: Settings = field(default_factory=Settings)
 
     def __post_init__(self):
         """Initialisation after object creation"""
@@ -124,6 +126,7 @@ class Frame:
         """Get the wrapped positions of all nodes in the frame"""
         with ProgressBar(
             total=len(self.get_positions()),
+            disable=not self._settings.verbose,
             leave=False,
             colour="#eaeaaa",
             unit="atom",
@@ -138,6 +141,7 @@ class Frame:
         for species, positions in positions_by_element.items():
             with ProgressBar(
                 total=len(positions),
+                disable=not self._settings.verbose,
                 leave=False,
                 colour="#eaeaaa",
                 unit="atom",

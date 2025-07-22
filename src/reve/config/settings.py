@@ -127,13 +127,17 @@ class AnalysisSettings:
         if self.with_bond_angular_distribution:
             analyzers.append("BondAngularDistributionAnalyzer")
         if self.with_neutron_structure_factor:
-            analyzers.append("NeutronStructureFactorAnalyzer")
+            raise ValueError(
+                "The NeutronStructureFactorAnalyzer is disable, use NeutronStructureFactorFFTAnalyzer instead"
+            )
+            # analyzers.append("NeutronStructureFactorAnalyzer")
         if self.with_neutron_structure_factor_fft:
             analyzers.append("NeutronStructureFactorFFTAnalyzer")
         if self.with_all:
             analyzers.append("PairDistributionFunctionAnalyzer")
+            analyzers.append("BondAngularDistributionAnalyzer")
             analyzers.append("NeutronStructureFactorFFTAnalyzer")
-            analyzers.append("NeutronStructureFactorAnalyzer")
+            # analyzers.append("NeutronStructureFactorAnalyzer")
         return analyzers
 
     def __str__(self) -> str:
@@ -161,10 +165,14 @@ class AnalysisSettings:
                     or key == "sqfft_settings"
                 ):
                     continue
-                if self.with_pair_distribution_function and key == "pdf_settings":
+                if (
+                    self.with_pair_distribution_function or self.with_all
+                ) and key == "pdf_settings":
                     lines.append(str(self.pdf_settings))
                     continue
-                if self.with_bond_angular_distribution and key == "bad_settings":
+                if (
+                    self.with_bond_angular_distribution or self.with_all
+                ) and key == "bad_settings":
                     lines.append(str(self.bad_settings))
                     continue
 
@@ -355,13 +363,17 @@ class SettingsBuilder:
     def with_analysis(self, analysis: AnalysisSettings):
         if not isinstance(analysis, AnalysisSettings):
             raise ValueError(f"Invalid analysis settings: {analysis}")
-        if analysis.with_bond_angular_distribution and analysis.bad_settings is None:
+        if (
+            analysis.with_bond_angular_distribution or analysis.with_all
+        ) and analysis.bad_settings is None:
             # Create a default BADAnalysisSettings object if not created
             bad_settings = BADAnalysisSettings(
                 triplets_to_calculate=["O-O-O", "O-Si-O", "Si-O-Si", "Si-Si-Si"]
             )
             analysis.bad_settings = bad_settings
-        if analysis.with_pair_distribution_function and analysis.pdf_settings is None:
+        if (
+            analysis.with_pair_distribution_function or analysis.with_all
+        ) and analysis.pdf_settings is None:
             # Create a default PDFAnalysisSettings object if not created
             pdf_settings = PDFAnalysisSettings(
                 pairs_to_calculate=["O-O", "O-Si", "Si-Si", "total"]

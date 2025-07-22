@@ -1,3 +1,4 @@
+from logging import disable
 import numpy as np
 import os
 from itertools import combinations
@@ -188,6 +189,7 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
                     pos2_batch = pos1[candidate_pairs[:, 1]]  # Same species
                     with ProgressBar(
                         total=pos1_batch.shape[0],
+                        disable=not self._settings.verbose,
                         leave=False,
                         colour="#eaeaaa",
                         unit="atom",
@@ -219,6 +221,7 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
                     pos2_batch = pos2[pairs_array[:, 1]]
                     with ProgressBar(
                         total=pos1_batch.shape[0],
+                        disable=not self._settings.verbose,
                         leave=False,
                         colour="#eaeaaa",
                         unit="atom",

@@ -21,7 +21,7 @@ __version__ ➜  0.0.1
 	|- range_of_frames: (0, -1)
 	|- apply_pbc: True
 	|- wrap_position: True
-	|- verbose: True
+	|- verbose: False
 	|- save_logs: True
 	|- save_performance: True
 	|- coordination_mode: different_type
@@ -39,16 +39,6 @@ __version__ ➜  0.0.1
         Analysis Settings:
         -----------------
 		|- overwrite: True
-		|- with_pair_distribution_function: True
-		|- pdf_settings:
-		  |- r_max = 10.0
-		  |- bins = 800
-		  |- pairs_to_calculate = 
-		    ['O-Si']
-		|- with_bond_angular_distribution: True
-		|- bad_settings:
-		  |- bins = 800
-		  |- triplets_to_calculate = 
-		    ['O-O-O', 'O-Si-O', 'Si-O-Si', 'Si-Si-Si']
+		|- with_all: True
         
         
