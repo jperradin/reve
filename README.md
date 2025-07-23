@@ -13,14 +13,11 @@ ____/\\\\\\\\\_________________________________________________
 ## ⇁ TOC
 
   - [Reve](https://www.google.com/search?q=%23reve)
-      - [⇁ TOC](https://www.google.com/search?q=%23%E2%87%81-toc)
-      - [⇁ Who is this for?](https://www.google.com/search?q=%23%E2%87%81-who-is-this-for)
-      - [⇁ Description and Features](https://www.google.com/search?q=%23%E2%87%81-description-and-features)
-      - [⇁ Installation](https://www.google.com/search?q=%23%E2%87%81-installation)
-      - [⇁ Getting Started](https://www.google.com/search?q=%23%E2%87%81-getting-started)
-      - [⇁ Documentation](https://www.google.com/search?q=%23%E2%87%81-documentation)
-      - [⇁ Contributing](https://www.google.com/search?q=%23%E2%87%81-contributing)
-      - [⇁ License](https://www.google.com/search?q=%23%E2%87%81-license)
+  - [⇁ TOC](#⇁-toc)
+  - [⇁ Who is this for?](#⇁-who-is-this-for)
+  - [⇁ Description and features](#⇁-description-and-features)
+  - [⇁ Installation](#⇁-installation)
+  - [⇁ License](#⇁-license)
 
 ## ⇁ Who is this for?
 
