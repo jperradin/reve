@@ -211,7 +211,7 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
                         desc="Calculating distances",
                     ) as progress:
                         distances = calculate_pbc_distances_batch(
-                            pos1_batch, pos2_batch, lattice, self.r_max, progress
+                            pos1_batch, pos2_batch, lattice, progress
                         )
                     # Filter distances within r_max
                     valid_distances = distances[distances < self.r_max]
@@ -243,7 +243,7 @@ class PairDistributionFunctionAnalyzer(BaseAnalyzer):
                         desc="Calculating distances",
                     ) as progress:
                         distances = calculate_pbc_distances_batch(
-                            pos1_batch, pos2_batch, lattice, self.r_max, progress
+                            pos1_batch, pos2_batch, lattice, progress
                         )
                     valid_distances = distances[distances < self.r_max]
                 else:

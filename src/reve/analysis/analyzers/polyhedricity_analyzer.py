@@ -105,12 +105,18 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
 
             polyhedricity = self._calculate_polyhedricity(node, distances)
 
+            if polyhedricity is None:
+                continue
+
+            m, n = polyhedricity
+
+            if int(m / self._dbin) + 1 > max(self._bins):
+                continue
+
             if node.coordination == 4:
-                m = polyhedricity[0]
                 self._hist_4_fold[int(m / self._dbin) + 1] += 1
                 self.counts["4_fold"] += 1
             if node.coordination == 5:
-                m, n = polyhedricity
                 self.counts["5_fold"] += 1
                 self._hist_SBP_pentahedricity[int(m / self._dbin) + 1] += 1
                 self._hist_TBP_pentahedricity[int(n / self._dbin) + 1] += 1
@@ -124,7 +130,6 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
                     self._hist_tbp_pentahedricity[int(n / self._dbin) + 1] += 1
             if node.coordination == 6:
                 self.counts["6_fold"] += 1
-                m = polyhedricity[0]
                 self._hist_6_fold[int(m / self._dbin) + 1] += 1
 
         self.polyhedricity["4_fold"] = self._hist_4_fold

@@ -17,14 +17,14 @@ __version__ ➜  0.0.1
         ----------------
 	|- project_name: example-SiO2
 	|- export_directory: ./examples/outputs/example-SiO2
-	|- file_location: ./examples/inputs/example-SiO2-96000at.xyz
+	|- file_location: ./examples/inputs/example-SiO2-1008at.xyz
 	|- range_of_frames: (0, -1)
 	|- apply_pbc: True
 	|- wrap_position: True
 	|- verbose: True
 	|- save_logs: True
 	|- save_performance: True
-	|- coordination_mode: same_type
+	|- coordination_mode: different_type
 	|- cutoffs:
 		Si-Si : distance = 3.5
 		Si-O  : distance = 2.3
@@ -39,10 +39,6 @@ __version__ ➜  0.0.1
         Analysis Settings:
         -----------------
 		|- overwrite: True
-		|- with_polyhedricity: True
-		|- poly_settings:
-		  |- central_species = Si
-		  |- vertices_species = Si
-		  |- max_c = 0.1
+		|- with_all: True
         
         

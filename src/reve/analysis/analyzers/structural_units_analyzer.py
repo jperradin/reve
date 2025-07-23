@@ -1,21 +1,13 @@
-from numba.core import analysis
 import numpy as np
 import os
 from itertools import product
 from tqdm import tqdm
 from typing import Dict, Optional, List
-from scipy.spatial import cKDTree
-from numba_progress import ProgressBar
 from natsort import natsorted
 
 from .base_analyzer import BaseAnalyzer
 from ...core.frame import Frame
 from ...config.settings import Settings
-from ...utils.geometry import (
-    calculate_pbc_distances_batch,
-    fast_histogram,
-    cartesian_to_fractional,
-)
 
 
 class StructuralUnitsAnalyzer(BaseAnalyzer):

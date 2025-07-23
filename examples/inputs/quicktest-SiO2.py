@@ -3,9 +3,9 @@ from reve import SettingsBuilder, main
 import reve.config.settings as c
 
 # Path to the trajectory file
-# path = "./examples/inputs/example-SiO2-1008at.xyz"
+path = "./examples/inputs/example-SiO2-1008at.xyz"
 # path = "./examples/inputs/example-SiO2-27216at.xyz"
-path = "./examples/inputs/example-SiO2-96000at.xyz"
+# path = "./examples/inputs/example-SiO2-96000at.xyz"
 
 # General settings
 config_general = c.GeneralSettings(
@@ -22,6 +22,7 @@ config_general = c.GeneralSettings(
         c.Cutoff("Si", "O", 2.30),
         c.Cutoff("O", "O", 3.05),
     ],
+    # coordination_mode="same_type",
     coordination_mode="different_type",
 )
 
@@ -32,9 +33,10 @@ config_lattice = c.LatticeSettings(
 
 # Analysis settings
 config_analysis = c.AnalysisSettings(
-    # with_all=True,
-    with_polyhedricity=True,
+    with_all=True,
 )
+
+config_analysis.with_neutron_structure_factor_fft = False
 
 # Build Settings object
 settings = (

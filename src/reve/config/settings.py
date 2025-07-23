@@ -69,7 +69,7 @@ class CONNAnalysisSettings:
 
     def __str__(self) -> str:
         line = "\t\t|- connect_settings:\n"
-        line += f"\t\t  |- networking_species = {self.networking_species}"
+        line += f"\t\t  |- networking_species = {self.networking_species}\n"
         line += f"\t\t  |- bridging_species = {self.bridging_species}"
         return line
 
@@ -84,8 +84,8 @@ class POLYAnalysisSettings:
 
     def __str__(self) -> str:
         line = "\t\t|- poly_settings:\n"
-        line += f"\t\t  |- central_species = {self.central_species}"
-        line += f"\t\t  |- vertices_species = {self.vertices_species}"
+        line += f"\t\t  |- central_species = {self.central_species}\n"
+        line += f"\t\t  |- vertices_species = {self.vertices_species}\n"
         line += f"\t\t  |- max_c = {self.max_c}"
         return line
 
@@ -178,23 +178,6 @@ class AnalysisSettings:
 
     def get_analyzers(self) -> List[str]:
         analyzers = []
-        if self.with_pair_distribution_function:
-            analyzers.append("PairDistributionFunctionAnalyzer")
-        if self.with_bond_angular_distribution:
-            analyzers.append("BondAngularDistributionAnalyzer")
-        if self.with_neutron_structure_factor:
-            raise ValueError(
-                "The NeutronStructureFactorAnalyzer is disable, use NeutronStructureFactorFFTAnalyzer instead"
-            )
-            # analyzers.append("NeutronStructureFactorAnalyzer")
-        if self.with_neutron_structure_factor_fft:
-            analyzers.append("NeutronStructureFactorFFTAnalyzer")
-        if self.with_structural_units:
-            analyzers.append("StructuralUnitsAnalyzer")
-        if self.with_connectivity:
-            analyzers.append("ConnectivityAnalyzer")
-        if self.with_polyhedricity:
-            analyzers.append("PolyhedricityAnalyzer")
         if self.with_all:
             analyzers.append("PairDistributionFunctionAnalyzer")
             analyzers.append("BondAngularDistributionAnalyzer")
@@ -202,7 +185,54 @@ class AnalysisSettings:
             analyzers.append("StructuralUnitsAnalyzer")
             analyzers.append("ConnectivityAnalyzer")
             analyzers.append("PolyhedricityAnalyzer")
+            self.with_pair_distribution_function = True
+            self.with_bond_angular_distribution = True
+            self.with_neutron_structure_factor_fft = True
+            self.with_structural_units = True
+            self.with_connectivity = True
+            self.with_polyhedricity = True
             # analyzers.append("NeutronStructureFactorAnalyzer")
+        if self.with_pair_distribution_function:
+            if "PairDistributionFunctionAnalyzer" not in analyzers:
+                analyzers.append("PairDistributionFunctionAnalyzer")
+        else:
+            if "PairDistributionFunctionAnalyzer" in analyzers:
+                analyzers.append("PairDistributionFunctionAnalyzer")
+        if self.with_bond_angular_distribution:
+            if "BondAngularDistributionAnalyzer" not in analyzers:
+                analyzers.append("BondAngularDistributionAnalyzer")
+        else:
+            if "BondAngularDistributionAnalyzer" in analyzers:
+                analyzers.append("BondAngularDistributionAnalyzer")
+        if self.with_neutron_structure_factor:
+            raise ValueError(
+                "The NeutronStructureFactorAnalyzer is disable, use NeutronStructureFactorFFTAnalyzer instead"
+            )
+            # analyzers.append("NeutronStructureFactorAnalyzer")
+        if self.with_neutron_structure_factor_fft:
+            if "NeutronStructureFactorFFTAnalyzer" not in analyzers:
+                analyzers.append("NeutronStructureFactorFFTAnalyzer")
+        else:
+            if "NeutronStructureFactorFFTAnalyzer" in analyzers:
+                analyzers.append("NeutronStructureFactorFFTAnalyzer")
+        if self.with_structural_units:
+            if "StructuralUnitsAnalyzer" not in analyzers:
+                analyzers.append("StructuralUnitsAnalyzer")
+        else:
+            if "StructuralUnitsAnalyzer" in analyzers:
+                analyzers.append("StructuralUnitsAnalyzer")
+        if self.with_connectivity:
+            if "ConnectivityAnalyzer" not in analyzers:
+                analyzers.append("ConnectivityAnalyzer")
+        else:
+            if "ConnectivityAnalyzer" in analyzers:
+                analyzers.append("ConnectivityAnalyzer")
+        if self.with_polyhedricity:
+            if "PolyhedricityAnalyzer" not in analyzers:
+                analyzers.append("PolyhedricityAnalyzer")
+        else:
+            if "PolyhedricityAnalyzer" in analyzers:
+                analyzers.append("PolyhedricityAnalyzer")
         return analyzers
 
     def __str__(self) -> str:
