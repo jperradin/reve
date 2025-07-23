@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit, prange
 from numba_progress import ProgressBar
-from tqdm import tqdm, tqdm_pandas
+from tqdm import tqdm
 
 
 @njit(cache=True, fastmath=True)
@@ -239,7 +239,6 @@ def calculate_pbc_distances_batch(
     pos1_batch: np.ndarray,
     pos2_batch: np.ndarray,
     lattice: np.ndarray,
-    r_max: float,
     progress_proxy: ProgressBar,
 ) -> np.ndarray:
     """Calculate PBC distances for batches of position pairs."""
@@ -257,6 +256,33 @@ def calculate_pbc_distances_batch(
         distances[i] = np.sqrt(np.sum(min_disp * min_disp))
         if progress_proxy is not None:
             progress_proxy.update(1)
+
+    return distances
+
+
+@njit(cache=True, fastmath=True)
+def calculate_pbc_dot_distances_combinations(
+    pos_batch: np.ndarray,
+    lattice: np.ndarray,
+) -> np.ndarray:
+    """Calculate PBC distances for unique combinations of position pairs within a single batch."""
+    inv_lattice = np.linalg.inv(lattice)
+    # Calculate the number of unique combinations
+    num_combinations = pos_batch.shape[0] * (pos_batch.shape[0] - 1) // 2
+    distances = np.empty(num_combinations, dtype=np.float64)
+
+    k = 0
+    for i in range(pos_batch.shape[0]):
+        for j in range(i + 1, pos_batch.shape[0]):
+            # Calculate direct displacement
+            direct_disp = pos_batch[i] - pos_batch[j]
+            # Get fractional coordinates
+            frac_disp = inv_lattice @ direct_disp
+            # Minimum image convention
+            frac_disp = frac_disp - np.round(frac_disp)
+            min_disp = frac_disp @ lattice
+            distances[k] = np.sqrt(np.sum(min_disp * min_disp))
+            k += 1
 
     return distances
 
@@ -290,6 +316,80 @@ def calculate_components(qx, qy, qz, positions, progress_proxy):
     return qcos, qsin
 
 
+@njit(nogil=True, cache=True, fastmath=True)
+def calculate_tetrahedricity(distances: np.ndarray) -> float:
+    squared_distances = distances**2
+
+    mean_sqr_distance = np.mean(squared_distances)
+
+    tetrahedricity = 0.0
+
+    for i in range(len(distances)):
+        for j in range(len(distances)):
+            tetrahedricity += (distances[i] - distances[j]) ** 2
+
+    tetrahedricity = tetrahedricity / (15 * mean_sqr_distance)
+
+    return tetrahedricity
+
+
+@njit(nogil=True, cache=True, fastmath=True)
+def calculate_square_based_pyramid(distances: np.ndarray) -> float:
+    _distances = np.copy(distances)
+    _distances[-2] /= np.sqrt(2)
+    _distances[-1] /= np.sqrt(2)
+
+    sbp_polyhedricity = 0.0
+
+    mean_sqr_distance = np.mean(_distances**2)
+
+    for i in range(len(_distances)):
+        for j in range(len(_distances)):
+            sbp_polyhedricity += (_distances[i] - _distances[j]) ** 2
+
+    sbp_polyhedricity = sbp_polyhedricity / (45 * mean_sqr_distance)
+
+    return sbp_polyhedricity
+
+
+@njit(nogil=True, cache=True, fastmath=True)
+def calculate_triangular_bipyramid(distances: np.ndarray) -> float:
+    _distances = np.copy(distances)
+    _distances[-1] /= np.sqrt(8.0 / 3.0)
+
+    tbp_polyhedricity = 0.0
+
+    mean_sqr_distance = np.mean(_distances**2)
+
+    for i in range(len(_distances)):
+        for j in range(len(_distances)):
+            tbp_polyhedricity += (_distances[i] - _distances[j]) ** 2
+
+    tbp_polyhedricity = tbp_polyhedricity / (45 * mean_sqr_distance)
+
+    return tbp_polyhedricity
+
+
+@njit(nogil=True, cache=True, fastmath=True)
+def calculate_octahedricity(distances: np.ndarray) -> float:
+    _distances = np.copy(distances)
+    _distances[-3] /= np.sqrt(2)
+    _distances[-2] /= np.sqrt(2)
+    _distances[-1] /= np.sqrt(2)
+
+    octahedricity = 0.0
+
+    mean_sqr_distance = np.mean(_distances**2)
+
+    for i in range(len(_distances)):
+        for j in range(len(_distances)):
+            octahedricity += (_distances[i] - _distances[j]) ** 2
+
+    octahedricity = octahedricity / (105 * mean_sqr_distance)
+
+    return octahedricity
+
+
 def warmup_jit():
     """
     Warms up the JIT-compiled functions by calling them with dummy data.
@@ -306,7 +406,7 @@ def warmup_jit():
     # progress bar
     progress_bar = tqdm(
         desc="Compiling jitted functions ...",
-        total=10,
+        total=15,
         colour="magenta",
         ascii=True,
         leave=True,
@@ -326,15 +426,22 @@ def warmup_jit():
     progress_bar.update(1)
     calculate_gyration_radius(dummy_positions, dummy_center_of_mass)
     progress_bar.update(1)
-    calculate_pbc_distances_batch(
-        dummy_positions, dummy_positions, dummy_lattice, 10.0, None
-    )
+    calculate_pbc_distances_batch(dummy_positions, dummy_positions, dummy_lattice, None)
+    progress_bar.update(1)
+    distances = calculate_pbc_dot_distances_combinations(dummy_positions, dummy_lattice)
     progress_bar.update(1)
     fast_histogram(np.array([1.0, 2.0, 3.0]), 10.0, 10)
     progress_bar.update(1)
     calculate_components(dummy_q, dummy_q, dummy_q, dummy_positions, None)
     progress_bar.update(1)
-
+    calculate_tetrahedricity(distances)
+    progress_bar.update(1)
+    calculate_square_based_pyramid(distances)
+    progress_bar.update(1)
+    calculate_triangular_bipyramid(distances)
+    progress_bar.update(1)
+    calculate_octahedricity(distances)
+    progress_bar.update(1)
     progress_bar.close()
 
 
@@ -347,7 +454,12 @@ __all__ = [
     "calculate_pbc_angle",
     "calculate_gyration_radius",
     "calculate_pbc_distances_batch",
+    "calculate_pbc_dot_distances_combinations",
     "fast_histogram",
     "calculate_components",
+    "calculate_tetrahedricity",
+    "calculate_square_based_pyramid",
+    "calculate_triangular_bipyramid",
+    "calculate_octahedricity",
     "warmup_jit",
 ]

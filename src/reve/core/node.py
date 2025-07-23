@@ -471,9 +471,14 @@ class Node:
     def set_coordination(self, coordination: int) -> None:
         self.coordination = coordination
 
+    def get_neighbors_positions_by_element(self, element: str) -> np.ndarray:
+        n_positions = np.array(
+            [n.position for n in self.neighbors if n.symbol == element]
+        )
+        return n_positions
+
     def __str__(self) -> str:
         return f"Node {self.node_id} ({self.symbol}) | coordination: {self.coordination} | neighbors: {len(self.neighbors)} | position: {self.position}"
 
     def __repr__(self) -> str:
         return self.__str__()
-

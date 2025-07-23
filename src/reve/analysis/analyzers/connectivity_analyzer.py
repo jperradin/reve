@@ -1,9 +1,7 @@
 import numpy as np
 import os
-from itertools import product
 from tqdm import tqdm
-from typing import Dict, Optional, List
-from natsort import natsorted
+from typing import Dict, Optional
 
 from .base_analyzer import BaseAnalyzer
 from ...core.frame import Frame

@@ -42,6 +42,11 @@ class SQFFTAnalysisSettings:
 
     grid_size_max: int = 512
 
+    def __str__(self) -> str:
+        line = "\t\t|- sqfft_settings:\n"
+        line += f"\t\t  |- grid_size_max = {self.grid_size_max}"
+        return line
+
 
 @dataclass
 class STRUNITSAnalysisSettings:
@@ -64,8 +69,24 @@ class CONNAnalysisSettings:
 
     def __str__(self) -> str:
         line = "\t\t|- connect_settings:\n"
-        line += f"\t\t  |- networking_species = \n\t\t    {self.networking_species}"
-        line += f"\t\t  |- bridging_species = \n\t\t    {self.bridging_species}"
+        line += f"\t\t  |- networking_species = {self.networking_species}"
+        line += f"\t\t  |- bridging_species = {self.bridging_species}"
+        return line
+
+
+@dataclass
+class POLYAnalysisSettings:
+    """Settings specific to the PolyhedricityAnalyzer"""
+
+    central_species: str = ""
+    vertices_species: str = ""
+    max_c: float = 0.1
+
+    def __str__(self) -> str:
+        line = "\t\t|- poly_settings:\n"
+        line += f"\t\t  |- central_species = {self.central_species}"
+        line += f"\t\t  |- vertices_species = {self.vertices_species}"
+        line += f"\t\t  |- max_c = {self.max_c}"
         return line
 
 
@@ -151,6 +172,9 @@ class AnalysisSettings:
     # Whether to calculate the conncetivities
     with_connectivity: bool = False
     connect_settings: Optional[CONNAnalysisSettings] = None
+    # Whether to calculate the polyhedricity
+    with_polyhedricity: bool = False
+    poly_settings: Optional[POLYAnalysisSettings] = None
 
     def get_analyzers(self) -> List[str]:
         analyzers = []
@@ -169,12 +193,15 @@ class AnalysisSettings:
             analyzers.append("StructuralUnitsAnalyzer")
         if self.with_connectivity:
             analyzers.append("ConnectivityAnalyzer")
+        if self.with_polyhedricity:
+            analyzers.append("PolyhedricityAnalyzer")
         if self.with_all:
             analyzers.append("PairDistributionFunctionAnalyzer")
             analyzers.append("BondAngularDistributionAnalyzer")
             analyzers.append("NeutronStructureFactorFFTAnalyzer")
             analyzers.append("StructuralUnitsAnalyzer")
             analyzers.append("ConnectivityAnalyzer")
+            analyzers.append("PolyhedricityAnalyzer")
             # analyzers.append("NeutronStructureFactorAnalyzer")
         return analyzers
 
@@ -211,6 +238,10 @@ class AnalysisSettings:
                     key == "with_connectivity" or key == "connect_settings"
                 ):
                     continue
+                if not self.with_polyhedricity and (
+                    key == "with_polyhedricity" or key == "poly_settings"
+                ):
+                    continue
                 if (
                     self.with_pair_distribution_function or self.with_all
                 ) and key == "pdf_settings":
@@ -222,6 +253,11 @@ class AnalysisSettings:
                     lines.append(str(self.bad_settings))
                     continue
                 if (
+                    self.with_neutron_structure_factor_fft or self.with_all
+                ) and key == "sqfft_settings":
+                    lines.append(str(self.sqfft_settings))
+                    continue
+                if (
                     self.with_structural_units or self.with_all
                 ) and key == "strunits_settings":
                     lines.append(str(self.strunits_settings))
@@ -230,6 +266,11 @@ class AnalysisSettings:
                     self.with_connectivity or self.with_all
                 ) and key == "connect_settings":
                     lines.append(str(self.connect_settings))
+                    continue
+                if (
+                    self.with_polyhedricity or self.with_all
+                ) and key == "poly_settings":
+                    lines.append(str(self.poly_settings))
                     continue
 
                 lines.append(f"\t\t|- {key}: {value}")
@@ -464,6 +505,12 @@ class SettingsBuilder:
                 bridging_species="O",
             )
             analysis.connect_settings = connect_settings
+        if analysis.with_polyhedricity and analysis.poly_settings is None:
+            # Create a POLYAnalysisSettings object if not create
+            poly_settings = POLYAnalysisSettings(
+                central_species="Si", vertices_species="O", max_c=0.1
+            )
+            analysis.poly_settings = poly_settings
 
         self._settings.analysis = analysis
         return self
@@ -483,4 +530,6 @@ __all__ = [
     BADAnalysisSettings,
     SQFFTAnalysisSettings,
     STRUNITSAnalysisSettings,
+    CONNAnalysisSettings,
+    POLYAnalysisSettings,
 ]

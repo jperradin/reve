@@ -186,4 +186,3 @@ class System:
                 raise StopIteration
         else:  # if current frame index is greater than the number of frames.
             raise StopIteration
-

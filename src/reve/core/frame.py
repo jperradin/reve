@@ -108,6 +108,11 @@ class Frame:
                 return node
         return None
 
+    def get_nodes_by_element(self, element: str) -> List[Node]:
+        """Get nodes by their element"""
+        nodes = [node for node in self.nodes if node.symbol == element]
+        return nodes
+
     def get_positions(self) -> np.ndarray:
         """Get the positions of all nodes in the frame"""
         return np.array([node.position for node in self.nodes])
