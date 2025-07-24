@@ -112,17 +112,20 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
                 bin_idx2 = 0 # bin_idx2 is not used in this case
             else:
                 bin_idx2 = int(n / self._dbin) + 1
-            max_bin = int(max(self._bins) / self._dbin) + 1
-
-            if bin_idx1 > max_bin or bin_idx2 > max_bin:
-                continue
+            max_bin = int(max(self._bins) / self._dbin)
 
             if node.coordination == 4:
+                if bin_idx1 >= max_bin:
+                    continue
                 self._hist_4_fold[bin_idx1] += 1
                 self.counts["4_fold"] += 1
             if node.coordination == 5:
+                if bin_idx1 >= max_bin:
+                    continue
                 self.counts["5_fold"] += 1
                 self._hist_SBP_pentahedricity[bin_idx1] += 1
+                if bin_idx2 >= max_bin:
+                    continue
                 self._hist_TBP_pentahedricity[bin_idx2] += 1
                 if m < n:
                     self.counts["5_fold_sbp"] += 1
@@ -133,6 +136,8 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
                     self._hist_5_fold[bin_idx2] += 1
                     self._hist_tbp_pentahedricity[bin_idx2] += 1
             if node.coordination == 6:
+                if bin_idx1 >= max_bin:
+                    continue
                 self.counts["6_fold"] += 1
                 self._hist_6_fold[bin_idx1] += 1
 

@@ -3,9 +3,10 @@ from reve import SettingsBuilder, main
 import reve.config.settings as c
 
 # Path to the trajectory file
-path = "./examples/inputs/example-SiO2-1008at.xyz"
+# path = "./examples/inputs/example-SiO2-1008at.xyz"
 # path = "./examples/inputs/example-SiO2-27216at.xyz"
 # path = "./examples/inputs/example-SiO2-96000at.xyz"
+path = "/media/jperradin/Expansion/STORE_julien/LAMMPS/sio2/glass/shik+wolf/compression/nvt/sio2-96000at-1x/gspc_0.0.12/1a/reve_results/pos91B.xyz"
 
 # General settings
 config_general = c.GeneralSettings(
