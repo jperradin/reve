@@ -414,7 +414,7 @@ class Node:
     mass: Optional[float] = field(default=None, compare=True, repr=True)
     correlation_length: Optional[float] = field(default=None, compare=True, repr=True)
     coordination: Optional[int] = field(default=None, compare=True, repr=True)
-    other: Optional[List[str]] = field(default=None, compare=False, repr=False)
+    form: Optional[str] = field(default=None, compare=False, repr=False)
     _ovito_selection_str: Optional[str] = field(default=None, compare=False, repr=False)
 
     _next_id = 0
@@ -453,8 +453,8 @@ class Node:
         if self.coordination is None:
             object.__setattr__(self, "coordination", 0)
 
-        if self.other is None:
-            object.__setattr__(self, "other", [])
+        if self.form is None:
+            object.__setattr__(self, "form", "")
 
         if self.neighbors is None:
             object.__setattr__(self, "neighbors", [])

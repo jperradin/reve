@@ -17,7 +17,7 @@ __version__ ➜  0.0.1
         ----------------
 	|- project_name: example-SiO2
 	|- export_directory: ./examples/outputs/example-SiO2
-	|- file_location: /media/jperradin/Expansion/STORE_julien/LAMMPS/sio2/glass/shik+wolf/compression/nvt/sio2-96000at-1x/gspc_0.0.12/1a/reve_results/pos91B.xyz
+	|- file_location: ./examples/inputs/example-SiO2-1008at.xyz
 	|- range_of_frames: (0, -1)
 	|- apply_pbc: True
 	|- wrap_position: True
@@ -44,5 +44,6 @@ __version__ ➜  0.0.1
 		  |- central_species = Si
 		  |- vertices_species = O
 		  |- max_c = 0.2
+		  |- print_forms = True
         
         

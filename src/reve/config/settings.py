@@ -81,12 +81,14 @@ class POLYAnalysisSettings:
     central_species: str = ""
     vertices_species: str = ""
     max_c: float = 0.1
+    print_forms: bool = True
 
     def __str__(self) -> str:
         line = "\t\t|- poly_settings:\n"
         line += f"\t\t  |- central_species = {self.central_species}\n"
         line += f"\t\t  |- vertices_species = {self.vertices_species}\n"
-        line += f"\t\t  |- max_c = {self.max_c}"
+        line += f"\t\t  |- max_c = {self.max_c}\n"
+        line += f"\t\t  |- print_forms = {self.print_forms}"
         return line
 
 
@@ -538,7 +540,7 @@ class SettingsBuilder:
         if analysis.with_polyhedricity and analysis.poly_settings is None:
             # Create a POLYAnalysisSettings object if not create
             poly_settings = POLYAnalysisSettings(
-                central_species="Si", vertices_species="O", max_c=0.2
+                central_species="Si", vertices_species="O", max_c=0.2, print_forms=True
             )
             analysis.poly_settings = poly_settings
 

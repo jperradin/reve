@@ -1,3 +1,4 @@
+from numba.core import analysis
 import numpy as np
 import os
 from tqdm import tqdm
@@ -52,6 +53,19 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
             if self._settings.analysis.poly_settings is not None
             else 0.5
         )
+        self.print_forms = (
+            self._settings.analysis.poly_settings.print_forms
+            if self._settings.analysis.poly_settings is not None
+            else True
+        )
+        if self.print_forms:
+            filename = os.path.join(
+                self._settings.export_directory, "lifetime_forms.dat"
+            )
+            with open(filename, "w") as f:
+                f.write("# lifetime_forms\n")
+            f.close()
+
         self._bins: Optional[np.ndarray] = None
         self._dbin: Optional[float] = None
         self._mid: Optional[np.ndarray] = None
@@ -111,7 +125,7 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
 
             bin_idx1 = int(m / self._dbin) + 1
             if np.isnan(n):
-                bin_idx2 = 0 # bin_idx2 is not used in this case
+                bin_idx2 = 0  # bin_idx2 is not used in this case
             else:
                 bin_idx2 = int(n / self._dbin) + 1
             max_bin = int(max(self._bins) / self._dbin)
@@ -121,6 +135,7 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
                     continue
                 self._hist_4_fold[bin_idx1] += 1
                 self.counts["4_fold"] += 1
+                node.form = "4"
             if node.coordination == 5:
                 if bin_idx1 >= max_bin:
                     continue
@@ -133,15 +148,18 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
                     self.counts["5_fold_sbp"] += 1
                     self._hist_5_fold[bin_idx1] += 1
                     self._hist_sbp_pentahedricity[bin_idx1] += 1
+                    node.form = "5p"
                 else:
                     self.counts["5_fold_tbp"] += 1
                     self._hist_5_fold[bin_idx2] += 1
                     self._hist_tbp_pentahedricity[bin_idx2] += 1
+                    node.form = "5b"
             if node.coordination == 6:
                 if bin_idx1 >= max_bin:
                     continue
                 self.counts["6_fold"] += 1
                 self._hist_6_fold[bin_idx1] += 1
+                node.form = "6"
 
         self.polyhedricity["4_fold"] = self._hist_4_fold
         self.polyhedricity["5_fold"] = self._hist_5_fold
@@ -153,6 +171,18 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
 
         self.poly_data.append(dict(self.polyhedricity))
         self.frame_processed_count += 1
+
+        if self._settings.analysis.poly_settings.print_forms:
+            output_file = os.path.join(
+                self._settings.export_directory, "lifetime_forms.dat"
+            )
+            line = ""
+            for node in self.central_nodes:
+                line += f"{node.form} "
+            line += "\n"
+            with open(output_file, "a") as f:
+                f.write(line)
+            f.close()
 
     def finalize(self) -> None:
         self.counts["5_fold_SBP"] = self.counts["5_fold"]
@@ -214,7 +244,9 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
             comments="# ",
         )
 
-    def _calculate_polyhedricity(self, node: Node, distances: np.ndarray) -> Tuple[float, float]:
+    def _calculate_polyhedricity(
+        self, node: Node, distances: np.ndarray
+    ) -> Tuple[float, float]:
         # Possible errors
         if node.coordination == 4 and len(distances) != 6:
             raise ValueError(
