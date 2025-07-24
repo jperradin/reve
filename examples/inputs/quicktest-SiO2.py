@@ -33,10 +33,10 @@ config_lattice = c.LatticeSettings(
 
 # Analysis settings
 config_analysis = c.AnalysisSettings(
-    with_all=True,
+    with_all=False,
+    with_polyhedricity=True,
 )
 
-config_analysis.with_neutron_structure_factor_fft = False
 
 # Build Settings object
 settings = (

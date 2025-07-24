@@ -105,32 +105,36 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
 
             polyhedricity = self._calculate_polyhedricity(node, distances)
 
-            if polyhedricity is None:
-                continue
-
             m, n = polyhedricity
 
-            if int(m / self._dbin) + 1 > max(self._bins):
+            bin_idx1 = int(m / self._dbin) + 1
+            if np.isnan(n):
+                bin_idx2 = 0 # bin_idx2 is not used in this case
+            else:
+                bin_idx2 = int(n / self._dbin) + 1
+            max_bin = int(max(self._bins) / self._dbin) + 1
+
+            if bin_idx1 > max_bin or bin_idx2 > max_bin:
                 continue
 
             if node.coordination == 4:
-                self._hist_4_fold[int(m / self._dbin) + 1] += 1
+                self._hist_4_fold[bin_idx1] += 1
                 self.counts["4_fold"] += 1
             if node.coordination == 5:
                 self.counts["5_fold"] += 1
-                self._hist_SBP_pentahedricity[int(m / self._dbin) + 1] += 1
-                self._hist_TBP_pentahedricity[int(n / self._dbin) + 1] += 1
+                self._hist_SBP_pentahedricity[bin_idx1] += 1
+                self._hist_TBP_pentahedricity[bin_idx2] += 1
                 if m < n:
                     self.counts["5_fold_sbp"] += 1
-                    self._hist_5_fold[int(m / self._dbin) + 1] += 1
-                    self._hist_sbp_pentahedricity[int(m / self._dbin) + 1] += 1
+                    self._hist_5_fold[bin_idx1] += 1
+                    self._hist_sbp_pentahedricity[bin_idx1] += 1
                 else:
                     self.counts["5_fold_tbp"] += 1
-                    self._hist_5_fold[int(n / self._dbin) + 1] += 1
-                    self._hist_tbp_pentahedricity[int(n / self._dbin) + 1] += 1
+                    self._hist_5_fold[bin_idx2] += 1
+                    self._hist_tbp_pentahedricity[bin_idx2] += 1
             if node.coordination == 6:
                 self.counts["6_fold"] += 1
-                self._hist_6_fold[int(m / self._dbin) + 1] += 1
+                self._hist_6_fold[bin_idx1] += 1
 
         self.polyhedricity["4_fold"] = self._hist_4_fold
         self.polyhedricity["5_fold"] = self._hist_5_fold
@@ -203,9 +207,7 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
             comments="# ",
         )
 
-    def _calculate_polyhedricity(
-        self, node: Node, distances: np.ndarray
-    ) -> Tuple[float, float]:
+    def _calculate_polyhedricity(self, node: Node, distances: np.ndarray) -> Tuple[float, float]:
         # Possible errors
         if node.coordination == 4 and len(distances) != 6:
             raise ValueError(
@@ -223,7 +225,7 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
         if node.coordination == 4 and len(distances) == 6:
             # Calculate tetrahedricity
             tetrahedricity = calculate_tetrahedricity(distances)
-            return tetrahedricity, -1.0
+            return tetrahedricity, np.nan
         if node.coordination == 5 and len(distances) == 10:
             # Calculate square based pyramid polyhedricity
             sbp_polyhedricity = calculate_square_based_pyramid(distances)
@@ -233,4 +235,4 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
         if node.coordination == 6 and len(distances) == 15:
             # Calculate triangular bipyramid polyhedricity
             octahedricity = calculate_octahedricity(distances)
-            return octahedricity, -1.0
+            return octahedricity, np.nan

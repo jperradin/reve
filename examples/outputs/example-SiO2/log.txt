@@ -39,6 +39,10 @@ __version__ ➜  0.0.1
         Analysis Settings:
         -----------------
 		|- overwrite: True
-		|- with_all: True
+		|- with_polyhedricity: True
+		|- poly_settings:
+		  |- central_species = Si
+		  |- vertices_species = O
+		  |- max_c = 0.1
         
         
