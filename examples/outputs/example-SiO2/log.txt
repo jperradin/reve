@@ -43,6 +43,6 @@ __version__ ➜  0.0.1
 		|- poly_settings:
 		  |- central_species = Si
 		  |- vertices_species = O
-		  |- max_c = 0.1
+		  |- max_c = 0.2
         
         

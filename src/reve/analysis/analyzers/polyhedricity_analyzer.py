@@ -99,6 +99,8 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
             **progress_bar_kwargs,
         )
         for i, node in progress_bar:
+            if node.coordination not in (4, 5, 6):
+                continue
             pos_batch = node.get_neighbors_positions_by_element(self.vertices_species)
             distances = calculate_pbc_dot_distances_combinations(pos_batch, lattice)
             distances.sort()

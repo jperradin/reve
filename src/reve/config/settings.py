@@ -538,7 +538,7 @@ class SettingsBuilder:
         if analysis.with_polyhedricity and analysis.poly_settings is None:
             # Create a POLYAnalysisSettings object if not create
             poly_settings = POLYAnalysisSettings(
-                central_species="Si", vertices_species="O", max_c=0.1
+                central_species="Si", vertices_species="O", max_c=0.2
             )
             analysis.poly_settings = poly_settings
 
