@@ -33,8 +33,7 @@ config_lattice = c.LatticeSettings(
 
 # Analysis settings
 config_analysis = c.AnalysisSettings(
-    with_all=False,
-    with_polyhedricity=True,
+    with_all=True,
 )
 
 

@@ -515,7 +515,7 @@ class SettingsBuilder:
             # Create a SQFFTAnalysisSettings object if not create
             sqfft_settings = SQFFTAnalysisSettings()
             analysis.sqfft_settings = sqfft_settings
-        if analysis.with_structural_units and analysis.strunits_settings is None:
+        if (analysis.with_structural_units or analysis.with_all) and analysis.strunits_settings is None:
             # Create a SQFFTAnalysisSettings object if not create
             strunits_settings = STRUNITSAnalysisSettings(
                 units_to_calculate=[
@@ -530,14 +530,14 @@ class SettingsBuilder:
                 ]
             )
             analysis.strunits_settings = strunits_settings
-        if analysis.with_connectivity and analysis.connect_settings is None:
+        if (analysis.with_connectivity or analysis.with_all) and analysis.connect_settings is None:
             # Create a SQFFTAnalysisSettings object if not create
             connect_settings = CONNAnalysisSettings(
                 networking_species="Si",
                 bridging_species="O",
             )
             analysis.connect_settings = connect_settings
-        if analysis.with_polyhedricity and analysis.poly_settings is None:
+        if( analysis.with_polyhedricity or analysis.with_all) and analysis.poly_settings is None:
             # Create a POLYAnalysisSettings object if not create
             poly_settings = POLYAnalysisSettings(
                 central_species="Si", vertices_species="O", max_c=0.2, print_forms=True

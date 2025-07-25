@@ -114,6 +114,7 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
         )
         for i, node in progress_bar:
             if node.coordination not in (4, 5, 6):
+                node.form = str(node.coordination)
                 continue
             pos_batch = node.get_neighbors_positions_by_element(self.vertices_species)
             distances = calculate_pbc_dot_distances_combinations(pos_batch, lattice)
@@ -178,7 +179,7 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
             )
             line = ""
             for node in self.central_nodes:
-                line += f"{node.form} "
+                line += f"{node.form:<3}"
             line += "\n"
             with open(output_file, "a") as f:
                 f.write(line)
