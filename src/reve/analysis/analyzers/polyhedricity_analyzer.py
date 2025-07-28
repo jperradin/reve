@@ -202,9 +202,10 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
                 if self.counts[key] == 0:
                     self.counts[key] = 1
                 self.polyhedricity[key] = np.mean(values, axis=0) / self.counts[key]
-                self.proportion[key] = self.counts[key] / (
-                    len(self.central_nodes) * self.frame_processed_count
-                )
+                if key not in ["5_fold_SBP", "5_fold_TBP"]:
+                    self.proportion[key] = self.counts[key] / (
+                        len(self.central_nodes) * self.frame_processed_count
+                    )
 
     def get_result(self) -> Dict[str, float]:
         return self.proportion
