@@ -13,10 +13,10 @@ class PDFAnalysisSettings:
     pairs_to_calculate: List[str] = field(default_factory=lambda: [""])
 
     def __str__(self) -> str:
-        line = "\t\t|- pdf_settings:\n"
-        line += f"\t\t  |- r_max = {self.r_max}\n"
-        line += f"\t\t  |- bins = {self.bins}\n"
-        line += f"\t\t  |- pairs_to_calculate = \n\t\t    {self.pairs_to_calculate}"
+        line = "\t\t  |- pdf_settings:\n"
+        line += f"\t\t    |- r_max = {self.r_max}\n"
+        line += f"\t\t    |- bins = {self.bins}\n"
+        line += f"\t\t    |- pairs_to_calculate = \n\t\t    {self.pairs_to_calculate}"
         return line
 
 
@@ -28,10 +28,10 @@ class BADAnalysisSettings:
     triplets_to_calculate: List[str] = field(default_factory=lambda: [""])
 
     def __str__(self) -> str:
-        line = "\t\t|- bad_settings:\n"
-        line += f"\t\t  |- bins = {self.bins}\n"
+        line = "\t\t  |- bad_settings:\n"
+        line += f"\t\t    |- bins = {self.bins}\n"
         line += (
-            f"\t\t  |- triplets_to_calculate = \n\t\t    {self.triplets_to_calculate}"
+            f"\t\t    |- triplets_to_calculate = \n\t\t    {self.triplets_to_calculate}"
         )
         return line
 
@@ -43,8 +43,8 @@ class SQFFTAnalysisSettings:
     grid_size_max: int = 512
 
     def __str__(self) -> str:
-        line = "\t\t|- sqfft_settings:\n"
-        line += f"\t\t  |- grid_size_max = {self.grid_size_max}"
+        line = "\t\t  |- sqfft_settings:\n"
+        line += f"\t\t    |- grid_size_max = {self.grid_size_max}"
         return line
 
 
@@ -55,8 +55,8 @@ class STRUNITSAnalysisSettings:
     units_to_calculate: List[str] = field(default_factory=lambda: [""])
 
     def __str__(self) -> str:
-        line = "\t\t|- strunits_settings:\n"
-        line += f"\t\t  |- units_to_calculate = \n\t\t    {self.units_to_calculate}"
+        line = "\t\t  |- strunits_settings:\n"
+        line += f"\t\t    |- units_to_calculate = \n\t\t    {self.units_to_calculate}"
         return line
 
 
@@ -68,9 +68,9 @@ class CONNAnalysisSettings:
     bridging_species: str = ""
 
     def __str__(self) -> str:
-        line = "\t\t|- connect_settings:\n"
-        line += f"\t\t  |- networking_species = {self.networking_species}\n"
-        line += f"\t\t  |- bridging_species = {self.bridging_species}"
+        line = "\t\t  |- connect_settings:\n"
+        line += f"\t\t    |- networking_species = {self.networking_species}\n"
+        line += f"\t\t    |- bridging_species = {self.bridging_species}"
         return line
 
 
@@ -84,11 +84,11 @@ class POLYAnalysisSettings:
     print_forms: bool = True
 
     def __str__(self) -> str:
-        line = "\t\t|- poly_settings:\n"
-        line += f"\t\t  |- central_species = {self.central_species}\n"
-        line += f"\t\t  |- vertices_species = {self.vertices_species}\n"
-        line += f"\t\t  |- max_c = {self.max_c}\n"
-        line += f"\t\t  |- print_forms = {self.print_forms}"
+        line = "\t\t  |- poly_settings:\n"
+        line += f"\t\t    |- central_species = {self.central_species}\n"
+        line += f"\t\t    |- vertices_species = {self.vertices_species}\n"
+        line += f"\t\t    |- max_c = {self.max_c}\n"
+        line += f"\t\t    |- print_forms = {self.print_forms}"
         return line
 
 
@@ -145,110 +145,212 @@ class GeneralSettings:
     coordination_mode: str = "all_types"
 
 
+from dataclasses import dataclass, field
+from typing import Optional, List, Set
+
+
 @dataclass
 class AnalysisSettings:
     """
     Analysis settings that contains all the analyzer settings.
 
     Attributes:
+        overwrite: Whether to overwrite the existing file, if False, appends results to the file
+        with_all: Whether to calculate all the properties
+        exclude_analyzers: Set of analyzer names to exclude when with_all is True
+        with_pair_distribution_function: Whether to calculate the pair distribution functions
+        pdf_settings: Settings for pair distribution function analysis
+        with_bond_angular_distribution: Whether to calculate the bond angular distribution
+        bad_settings: Settings for bond angular distribution analysis
+        with_neutron_structure_factor: Whether to calculate the neutron structure factor
+        with_neutron_structure_factor_fft: Whether to calculate the neutron structure factor via fft
+        sqfft_settings: Settings for neutron structure factor FFT analysis
+        with_structural_units: Whether to calculate the structural units
+        strunits_settings: Settings for structural units analysis
+        with_connectivity: Whether to calculate the connectivities
+        connect_settings: Settings for connectivity analysis
+        with_polyhedricity: Whether to calculate the polyhedricity
+        poly_settings: Settings for polyhedricity analysis
     """
 
     # Whether to overwrite the existing file, if False, appends results to the file
     overwrite: bool = True
     # Whether to calculate all the properties
     with_all: bool = False
+    # Set of analyzer names to exclude when with_all is True
+    exclude_analyzers: Set[str] = field(default_factory=set)
     # Whether to calculate the pair distribution functions.
     with_pair_distribution_function: bool = False
-    pdf_settings: Optional[PDFAnalysisSettings] = None
+    pdf_settings: Optional["PDFAnalysisSettings"] = None
     # Whether to calculate the bond angular distribution
     with_bond_angular_distribution: bool = False
-    bad_settings: Optional[BADAnalysisSettings] = None
+    bad_settings: Optional["BADAnalysisSettings"] = None
     # Whether to calculate the neutron structure factor
     with_neutron_structure_factor: bool = False
     # Whether to calculate the neutron structure factor via fft
     with_neutron_structure_factor_fft: bool = False
-    sqfft_settings: Optional[SQFFTAnalysisSettings] = None
+    sqfft_settings: Optional["SQFFTAnalysisSettings"] = None
     # Whether to calculate the structural units
     with_structural_units: bool = False
-    strunits_settings: Optional[STRUNITSAnalysisSettings] = None
+    strunits_settings: Optional["STRUNITSAnalysisSettings"] = None
     # Whether to calculate the conncetivities
     with_connectivity: bool = False
-    connect_settings: Optional[CONNAnalysisSettings] = None
+    connect_settings: Optional["CONNAnalysisSettings"] = None
     # Whether to calculate the polyhedricity
     with_polyhedricity: bool = False
-    poly_settings: Optional[POLYAnalysisSettings] = None
+    poly_settings: Optional["POLYAnalysisSettings"] = None
+
+    def __post_init__(self):
+        """Post-initialization to handle with_all logic and exclusions."""
+        if self.with_all:
+            self._activate_all_analyzers()
+
+    def _activate_all_analyzers(self):
+        """Activate all analyzers except those in exclude_analyzers."""
+        analyzer_mapping = {
+            "pair_distribution_function": "with_pair_distribution_function",
+            "bond_angular_distribution": "with_bond_angular_distribution",
+            "neutron_structure_factor_fft": "with_neutron_structure_factor_fft",
+            "structural_units": "with_structural_units",
+            "connectivity": "with_connectivity",
+            "polyhedricity": "with_polyhedricity",
+        }
+
+        for analyzer_key, attribute_name in analyzer_mapping.items():
+            if analyzer_key not in self.exclude_analyzers:
+                setattr(self, attribute_name, True)
+
+    def is_analyzer_enabled(self, analyzer_type: str) -> bool:
+        """
+        Check if a specific analyzer is enabled, considering with_all and exclusions.
+
+        Args:
+            analyzer_type: Type of analyzer to check
+
+        Returns:
+            bool: True if the analyzer is enabled
+        """
+        analyzer_mapping = {
+            "pair_distribution_function": self.with_pair_distribution_function,
+            "bond_angular_distribution": self.with_bond_angular_distribution,
+            "neutron_structure_factor_fft": self.with_neutron_structure_factor_fft,
+            "structural_units": self.with_structural_units,
+            "connectivity": self.with_connectivity,
+            "polyhedricity": self.with_polyhedricity,
+        }
+
+        if self.with_all:
+            return analyzer_type not in self.exclude_analyzers
+
+        return analyzer_mapping.get(analyzer_type, False)
+
+    def exclude_analyzer(self, analyzer_name: str) -> "AnalysisSettings":
+        """
+        Add an analyzer to the exclusion list and deactivate it if with_all is True.
+
+        Args:
+            analyzer_name: Name of the analyzer to exclude
+
+        Returns:
+            AnalysisSettings: Self for method chaining
+        """
+        self.exclude_analyzers.add(analyzer_name)
+
+        # If with_all is True, deactivate the specific analyzer
+        if self.with_all:
+            analyzer_mapping = {
+                "pair_distribution_function": "with_pair_distribution_function",
+                "bond_angular_distribution": "with_bond_angular_distribution",
+                "neutron_structure_factor_fft": "with_neutron_structure_factor_fft",
+                "structural_units": "with_structural_units",
+                "connectivity": "with_connectivity",
+                "polyhedricity": "with_polyhedricity",
+            }
+
+            if analyzer_name in analyzer_mapping:
+                setattr(self, analyzer_mapping[analyzer_name], False)
+
+        return self
+
+    def include_analyzer(self, analyzer_name: str) -> "AnalysisSettings":
+        """
+        Remove an analyzer from the exclusion list and activate it if with_all is True.
+
+        Args:
+            analyzer_name: Name of the analyzer to include
+
+        Returns:
+            AnalysisSettings: Self for method chaining
+        """
+        self.exclude_analyzers.discard(analyzer_name)
+
+        # If with_all is True, activate the specific analyzer
+        if self.with_all:
+            analyzer_mapping = {
+                "pair_distribution_function": "with_pair_distribution_function",
+                "bond_angular_distribution": "with_bond_angular_distribution",
+                "neutron_structure_factor_fft": "with_neutron_structure_factor_fft",
+                "structural_units": "with_structural_units",
+                "connectivity": "with_connectivity",
+                "polyhedricity": "with_polyhedricity",
+            }
+
+            if analyzer_name in analyzer_mapping:
+                setattr(self, analyzer_mapping[analyzer_name], True)
+
+        return self
 
     def get_analyzers(self) -> List[str]:
+        """Get list of active analyzers."""
         analyzers = []
-        if self.with_all:
+
+        if self.is_analyzer_enabled("pair_distribution_function"):
             analyzers.append("PairDistributionFunctionAnalyzer")
+
+        if self.is_analyzer_enabled("bond_angular_distribution"):
             analyzers.append("BondAngularDistributionAnalyzer")
-            analyzers.append("NeutronStructureFactorFFTAnalyzer")
-            analyzers.append("StructuralUnitsAnalyzer")
-            analyzers.append("ConnectivityAnalyzer")
-            analyzers.append("PolyhedricityAnalyzer")
-            self.with_pair_distribution_function = True
-            self.with_bond_angular_distribution = True
-            self.with_neutron_structure_factor_fft = True
-            self.with_structural_units = True
-            self.with_connectivity = True
-            self.with_polyhedricity = True
-            # analyzers.append("NeutronStructureFactorAnalyzer")
-        if self.with_pair_distribution_function:
-            if "PairDistributionFunctionAnalyzer" not in analyzers:
-                analyzers.append("PairDistributionFunctionAnalyzer")
-        else:
-            if "PairDistributionFunctionAnalyzer" in analyzers:
-                analyzers.append("PairDistributionFunctionAnalyzer")
-        if self.with_bond_angular_distribution:
-            if "BondAngularDistributionAnalyzer" not in analyzers:
-                analyzers.append("BondAngularDistributionAnalyzer")
-        else:
-            if "BondAngularDistributionAnalyzer" in analyzers:
-                analyzers.append("BondAngularDistributionAnalyzer")
+
         if self.with_neutron_structure_factor:
             raise ValueError(
-                "The NeutronStructureFactorAnalyzer is disable, use NeutronStructureFactorFFTAnalyzer instead"
+                "The NeutronStructureFactorAnalyzer is disabled, use NeutronStructureFactorFFTAnalyzer instead"
             )
-            # analyzers.append("NeutronStructureFactorAnalyzer")
-        if self.with_neutron_structure_factor_fft:
-            if "NeutronStructureFactorFFTAnalyzer" not in analyzers:
-                analyzers.append("NeutronStructureFactorFFTAnalyzer")
-        else:
-            if "NeutronStructureFactorFFTAnalyzer" in analyzers:
-                analyzers.append("NeutronStructureFactorFFTAnalyzer")
-        if self.with_structural_units:
-            if "StructuralUnitsAnalyzer" not in analyzers:
-                analyzers.append("StructuralUnitsAnalyzer")
-        else:
-            if "StructuralUnitsAnalyzer" in analyzers:
-                analyzers.append("StructuralUnitsAnalyzer")
-        if self.with_connectivity:
-            if "ConnectivityAnalyzer" not in analyzers:
-                analyzers.append("ConnectivityAnalyzer")
-        else:
-            if "ConnectivityAnalyzer" in analyzers:
-                analyzers.append("ConnectivityAnalyzer")
-        if self.with_polyhedricity:
-            if "PolyhedricityAnalyzer" not in analyzers:
-                analyzers.append("PolyhedricityAnalyzer")
-        else:
-            if "PolyhedricityAnalyzer" in analyzers:
-                analyzers.append("PolyhedricityAnalyzer")
+
+        if self.is_analyzer_enabled("neutron_structure_factor_fft"):
+            analyzers.append("NeutronStructureFactorFFTAnalyzer")
+
+        if self.is_analyzer_enabled("structural_units"):
+            analyzers.append("StructuralUnitsAnalyzer")
+
+        if self.is_analyzer_enabled("connectivity"):
+            analyzers.append("ConnectivityAnalyzer")
+
+        if self.is_analyzer_enabled("polyhedricity"):
+            analyzers.append("PolyhedricityAnalyzer")
+
         return analyzers
 
     def __str__(self) -> str:
         lines = []
+
+        # Add exclude_analyzers info if with_all is True and there are exclusions
+        if self.with_all and self.exclude_analyzers:
+            lines.append(f"\t\t|- with_all: {self.with_all}")
+            lines.append(f"\t\t|- exclude_analyzers: {list(self.exclude_analyzers)}")
+
         for key, value in self.__dict__.items():
-            hold = key, value
+            if key == "exclude_analyzers":
+                continue
+            if key == "with_all" and self.with_all and self.exclude_analyzers:
+                continue
+
             if value is not None:
                 if not self.with_all and key == "with_all":
                     continue
-                if not self.with_pair_distribution_function and (
+                if not self.is_analyzer_enabled("pair_distribution_function") and (
                     key == "with_pair_distribution_function" or key == "pdf_settings"
                 ):
                     continue
-                if not self.with_bond_angular_distribution and (
+                if not self.is_analyzer_enabled("bond_angular_distribution") and (
                     key == "with_bond_angular_distribution" or key == "bad_settings"
                 ):
                     continue
@@ -257,55 +359,56 @@ class AnalysisSettings:
                     and key == "with_neutron_structure_factor"
                 ):
                     continue
-                if not self.with_neutron_structure_factor_fft and (
+                if not self.is_analyzer_enabled("neutron_structure_factor_fft") and (
                     key == "with_neutron_structure_factor_fft"
                     or key == "sqfft_settings"
                 ):
                     continue
-                if not self.with_structural_units and (
+                if not self.is_analyzer_enabled("structural_units") and (
                     key == "with_structural_units" or key == "strunits_settings"
                 ):
                     continue
-                if not self.with_connectivity and (
+                if not self.is_analyzer_enabled("connectivity") and (
                     key == "with_connectivity" or key == "connect_settings"
                 ):
                     continue
-                if not self.with_polyhedricity and (
+                if not self.is_analyzer_enabled("polyhedricity") and (
                     key == "with_polyhedricity" or key == "poly_settings"
                 ):
                     continue
                 if (
-                    self.with_pair_distribution_function or self.with_all
+                    self.is_analyzer_enabled("pair_distribution_function")
                 ) and key == "pdf_settings":
                     lines.append(str(self.pdf_settings))
                     continue
                 if (
-                    self.with_bond_angular_distribution or self.with_all
+                    self.is_analyzer_enabled("bond_angular_distribution")
                 ) and key == "bad_settings":
                     lines.append(str(self.bad_settings))
                     continue
                 if (
-                    self.with_neutron_structure_factor_fft or self.with_all
+                    self.is_analyzer_enabled("neutron_structure_factor_fft")
                 ) and key == "sqfft_settings":
                     lines.append(str(self.sqfft_settings))
                     continue
                 if (
-                    self.with_structural_units or self.with_all
+                    self.is_analyzer_enabled("structural_units")
                 ) and key == "strunits_settings":
                     lines.append(str(self.strunits_settings))
                     continue
                 if (
-                    self.with_connectivity or self.with_all
+                    self.is_analyzer_enabled("connectivity")
                 ) and key == "connect_settings":
                     lines.append(str(self.connect_settings))
                     continue
                 if (
-                    self.with_polyhedricity or self.with_all
+                    self.is_analyzer_enabled("polyhedricity")
                 ) and key == "poly_settings":
                     lines.append(str(self.poly_settings))
                     continue
 
                 lines.append(f"\t\t|- {key}: {value}")
+
         output = """
         Analysis Settings:
         -----------------
@@ -490,35 +593,44 @@ class SettingsBuilder:
         return self
 
     def with_analysis(self, analysis: AnalysisSettings):
+        """Enhanced builder method that handles with_all and exclusions."""
         if not isinstance(analysis, AnalysisSettings):
             raise ValueError(f"Invalid analysis settings: {analysis}")
+
+        # Handle settings creation for enabled analyzers
         if (
-            analysis.with_bond_angular_distribution or analysis.with_all
-        ) and analysis.bad_settings is None:
+            analysis.is_analyzer_enabled("bond_angular_distribution")
+            and analysis.bad_settings is None
+        ):
             # Create a default BADAnalysisSettings object if not created
             bad_settings = BADAnalysisSettings(
                 triplets_to_calculate=["O-O-O", "O-Si-O", "Si-O-Si", "Si-Si-Si"]
             )
             analysis.bad_settings = bad_settings
+
         if (
-            analysis.with_pair_distribution_function or analysis.with_all
-        ) and analysis.pdf_settings is None:
+            analysis.is_analyzer_enabled("pair_distribution_function")
+            and analysis.pdf_settings is None
+        ):
             # Create a default PDFAnalysisSettings object if not created
             pdf_settings = PDFAnalysisSettings(
                 pairs_to_calculate=["O-O", "O-Si", "Si-Si", "total"]
             )
             analysis.pdf_settings = pdf_settings
+
         if (
-            analysis.with_neutron_structure_factor_fft
+            analysis.is_analyzer_enabled("neutron_structure_factor_fft")
             and analysis.sqfft_settings is None
         ):
-            # Create a SQFFTAnalysisSettings object if not create
+            # Create a SQFFTAnalysisSettings object if not created
             sqfft_settings = SQFFTAnalysisSettings()
             analysis.sqfft_settings = sqfft_settings
+
         if (
-            analysis.with_structural_units or analysis.with_all
-        ) and analysis.strunits_settings is None:
-            # Create a SQFFTAnalysisSettings object if not create
+            analysis.is_analyzer_enabled("structural_units")
+            and analysis.strunits_settings is None
+        ):
+            # Create a STRUNITSAnalysisSettings object if not created
             strunits_settings = STRUNITSAnalysisSettings(
                 units_to_calculate=[
                     "SiO4",
@@ -532,19 +644,23 @@ class SettingsBuilder:
                 ]
             )
             analysis.strunits_settings = strunits_settings
+
         if (
-            analysis.with_connectivity or analysis.with_all
-        ) and analysis.connect_settings is None:
-            # Create a SQFFTAnalysisSettings object if not create
+            analysis.is_analyzer_enabled("connectivity")
+            and analysis.connect_settings is None
+        ):
+            # Create a CONNAnalysisSettings object if not created
             connect_settings = CONNAnalysisSettings(
                 networking_species="Si",
                 bridging_species="O",
             )
             analysis.connect_settings = connect_settings
+
         if (
-            analysis.with_polyhedricity or analysis.with_all
-        ) and analysis.poly_settings is None:
-            # Create a POLYAnalysisSettings object if not create
+            analysis.is_analyzer_enabled("polyhedricity")
+            and analysis.poly_settings is None
+        ):
+            # Create a POLYAnalysisSettings object if not created
             poly_settings = POLYAnalysisSettings(
                 central_species="Si", vertices_species="O", max_c=0.2, print_forms=False
             )

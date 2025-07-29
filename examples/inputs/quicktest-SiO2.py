@@ -36,6 +36,7 @@ config_analysis = c.AnalysisSettings(
     with_all=True,
 )
 
+config_analysis.exclude_analyzer("neutron_structure_factor_fft")
 
 # Build Settings object
 settings = (
