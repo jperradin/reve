@@ -355,7 +355,10 @@ def calculate_square_based_pyramid(distances: np.ndarray) -> float:
 @njit(nogil=True, cache=True, fastmath=True)
 def calculate_triangular_bipyramid(distances: np.ndarray) -> float:
     _distances = np.copy(distances)
-    _distances[-1] /= np.sqrt(8.0 / 3.0)
+    _distances[-4] /= np.sqrt(3.0 / 2.0)
+    _distances[-3] /= np.sqrt(3.0 / 2.0)
+    _distances[-2] /= np.sqrt(3.0 / 2.0)
+    _distances[-1] /= np.sqrt(2.0)
 
     tbp_polyhedricity = 0.0
 

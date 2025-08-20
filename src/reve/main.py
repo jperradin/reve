@@ -78,7 +78,7 @@ def main(settings: Settings):
 
     # Initialize progress bar
     progress_bar_kwargs = {
-        "disable": not settings.verbose,
+        # "disable": not settings.verbose, # NOTE: TEMPORARY
         "leave": True,
         "ncols": os.get_terminal_size().columns,
         "colour": "red",
