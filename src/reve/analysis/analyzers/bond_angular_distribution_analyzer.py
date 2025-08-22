@@ -19,6 +19,11 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
         super().__init__(settings)
         self.angles: Optional[Dict[str, np.ndarray]] = None
         self.angle_data: list = []
+        self.angle_average_data: list = []
+        self.angle_most_probable_data: list = []
+        self.mean_angles: Optional[Dict[str, np.ndarray]] = None
+        self.mp_angles: Optional[Dict[str, np.ndarray]] = None
+        self.std_angles: Optional[Dict[str, np.ndarray]] = None
         self.angle_max: float = 180.0
 
         # BADAnalysisSettings
@@ -88,14 +93,35 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
 
         # Histogram the angles for the current frame
         histograms = {}
+        averages = {}
+        most_probable_angles = {}
         for triplet, angle_list in angles_for_frame.items():
             hist, _ = np.histogram(
                 angle_list, bins=self.bins, range=(0, self.angle_max)
             )
             histograms[triplet] = hist
+            # Calculate the average angle for this triplet
+            if triplet == 'Si-O-Si':
+                # Select angles in the range [110, 180]
+                angle_list = [angle for angle in angle_list if 110 <= angle <= 180]
+            averages[triplet] = np.mean(angle_list)
+            # Find the most probable angle for this triplet
+            if len(angle_list) > 0:
+                if triplet == 'Si-O-Si':
+                    # Select angles in the range [110, 180]
+                    angle_list = [angle for angle in angle_list if 110 <= angle <= 180]
+                    _hist, _ = np.histogram(
+                        angle_list, bins=self.bins, range=(0, self.angle_max)
+                    )
+                    max_index = np.argmax(_hist)
+                else:
+                    max_index = np.argmax(hist)
+                most_probable_angles[triplet] = (max_index + 0.5) * self.d_angle
 
         if histograms:
             self.angle_data.append(histograms)
+            self.angle_average_data.append(averages)
+            self.angle_most_probable_data.append(most_probable_angles)
             self.frame_processed_count += 1
 
     def finalize(self) -> None:
@@ -106,10 +132,44 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
         summed_hist = {
             triplet: np.zeros(self.bins) for triplet in self.triplets_to_analyze
         }
+
         for frame_hist in self.angle_data:
             for triplet, hist in frame_hist.items():
                 summed_hist[triplet] += hist
 
+        self.mean_angles = {}
+        self.std_angles = {}
+        self.mp_angles = {}
+        for i in range(len(self.angle_average_data)):
+            frame_average = self.angle_average_data[i]
+            for triplet, this_average in frame_average.items():
+                if triplet not in self.mean_angles:
+                    self.mean_angles[triplet] = []
+                    self.std_angles[triplet] = []
+                    self.mp_angles[triplet] = []
+                self.mean_angles[triplet].append(this_average)
+                self.std_angles[triplet].append(this_average)
+                self.mp_angles[triplet].append(
+                    self.angle_most_probable_data[i][triplet]
+                )
+        # Calculate mean and std for each triplet
+        for triplet in self.triplets_to_analyze:
+            if triplet in self.mean_angles:
+                if len(self.mean_angles[triplet]) > 0:
+                    self.mean_angles[triplet] = np.mean(self.mean_angles[triplet])
+                    self.mp_angles[triplet] = np.mean(self.mp_angles[triplet])
+                else:
+                    self.mean_angles[triplet] = 0.0
+                    self.mp_angles[triplet] = 0.0
+                if len(self.std_angles[triplet]) > 1:
+                    self.std_angles[triplet] = np.std(self.std_angles[triplet])
+                else:
+                    self.std_angles[triplet] = 0.0
+            else:
+                self.mean_angles[triplet] = 0.0
+                self.mp_angles[triplet] = 0.0
+                self.std_angles[triplet] = 0.0
+        
         # Normalize the distributions
         self.angles = {}
         for triplet, hist in summed_hist.items():
@@ -144,3 +204,30 @@ class BondAngularDistributionAnalyzer(BaseAnalyzer):
                 for triplet in self.angles.keys():
                     line += f"\t{self.angles[triplet][i]:.5f}"
                 f.write(line + "\n")
+
+        output_path = os.path.join(self._settings.export_directory, "mean_angles.dat")
+        with open(output_path, "w") as f:
+            header = "# Angle\t" + "\t".join(self.mean_angles.keys()) + "\n"
+            f.write(header)
+            line = ""
+            for triplet in self.mean_angles.keys():
+                line += f"{self.mean_angles[triplet]:.5f}\t"
+            f.write(line.strip() + "\n")
+            
+        output_path = os.path.join(self._settings.export_directory, "mp_angles.dat")
+        with open(output_path, "w") as f:
+            header = "# Angle\t" + "\t".join(self.mp_angles.keys()) + "\n"
+            f.write(header)
+            line = ""
+            for triplet in self.mp_angles.keys():
+                line += f"{self.mp_angles[triplet]:.5f}\t"
+            f.write(line.strip() + "\n")
+    
+        output_path = os.path.join(self._settings.export_directory, "std_angles.dat")
+        with open(output_path, "w") as f:
+            header = "# Angle\t" + "\t".join(self.std_angles.keys()) + "\n"
+            f.write(header)
+            line = ""
+            for triplet in self.std_angles.keys():
+                line += f"{self.std_angles[triplet]:.5f}\t"
+            f.write(line.strip() + "\n")
