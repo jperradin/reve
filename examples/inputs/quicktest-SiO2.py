@@ -3,8 +3,8 @@ from reve import SettingsBuilder, main
 import reve.config.settings as c
 
 # Path to the trajectory file
-path = "./examples/inputs/example-SiO2-1008at.xyz"
-# path = "./examples/inputs/example-SiO2-27216at.xyz"
+# path = "./examples/inputs/example-SiO2-1008at.xyz"
+path = "./examples/inputs/example-SiO2-27216at.xyz"
 # path = "./examples/inputs/example-SiO2-96000at.xyz"
 
 # General settings
@@ -33,10 +33,11 @@ config_lattice = c.LatticeSettings(
 
 # Analysis settings
 config_analysis = c.AnalysisSettings(
-    with_all=True,
+    with_all=False,
+    with_polyhedricity=True,
 )
 
-config_analysis.exclude_analyzer("neutron_structure_factor_fft")
+# config_analysis.exclude_analyzer("neutron_structure_factor_fft")
 
 # Build Settings object
 settings = (

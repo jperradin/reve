@@ -3,9 +3,8 @@ import numpy as np
 import os
 from itertools import combinations
 from tqdm import tqdm
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List
 from scipy.spatial import cKDTree
-from numba import jit, prange
 from numba_progress import ProgressBar
 
 from .base_analyzer import BaseAnalyzer

@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.multiarray import dtype
 from numba import njit, prange
 from numba_progress import ProgressBar
 from tqdm import tqdm
@@ -260,6 +261,29 @@ def calculate_pbc_distances_batch(
     return distances
 
 
+@njit(cache=True, fastmath=True, parallel=True)
+def calculate_pbc_cv_distances_batch(
+    pos_center: np.ndarray,
+    pos_vertices: np.ndarray,
+    lattice: np.ndarray,
+) -> np.ndarray:
+    """Calculate PBC distances for batches of position pairs."""
+    inv_lattice = np.linalg.inv(lattice)
+    distances = np.empty(pos_vertices.shape[0], dtype=np.float64)
+
+    for i in prange(pos_vertices.shape[0]):
+        # Calculate direct displacement
+        direct_disp = pos_center - pos_vertices[i]
+        # Get fractional coordinates
+        frac_disp = inv_lattice @ direct_disp
+        # Minimum image convention
+        frac_disp = frac_disp - np.round(frac_disp)
+        min_disp = frac_disp @ lattice
+        distances[i] = np.sqrt(np.sum(min_disp * min_disp))
+
+    return distances
+
+
 @njit(cache=True, fastmath=True)
 def calculate_pbc_dot_distances_combinations(
     pos_batch: np.ndarray,
@@ -285,6 +309,74 @@ def calculate_pbc_dot_distances_combinations(
             k += 1
 
     return distances
+
+
+@njit(cache=True, fastmath=True)
+def calculate_pbc_angle_combinations(
+    pos_batch: np.ndarray,
+    lattice: np.ndarray,
+) -> np.ndarray:
+    """Calculate PBC angles for unique combinations of position pairs within a single batch.
+
+    Args:
+        pos_batch (np.ndarray): Positions
+        lattice (np.ndarray): The lattice matrix of the system (3x3)
+
+    Returns:
+        angles: All the possible angles formed between atoms in degrees
+    """
+    n_atoms = pos_batch.shape[0]
+    inv_lattice = np.linalg.inv(lattice)
+
+    # Number of unique triples
+    num_combinations = n_atoms * (n_atoms - 1) * (n_atoms - 2) // 2
+    angles = np.empty(num_combinations, dtype=np.float64)
+
+    k = 0
+    for i in range(n_atoms):
+        for j in range(n_atoms):
+            if j == i:
+                continue
+            for l in range(j + 1, n_atoms):
+                if l == i:
+                    continue
+                # Displacement vectors (central -> neighbor)
+                direct_disp1 = pos_batch[j] - pos_batch[i]
+                direct_disp2 = pos_batch[l] - pos_batch[i]
+
+                # Convert to fractional coords
+                frac_disp1 = inv_lattice @ direct_disp1
+                frac_disp2 = inv_lattice @ direct_disp2
+
+                # Apply minimum image convention
+                frac_disp1 -= np.round(frac_disp1)
+                frac_disp2 -= np.round(frac_disp2)
+
+                # Back to Cartesian
+                min_disp1 = frac_disp1 @ lattice
+                min_disp2 = frac_disp2 @ lattice
+
+                # Compute angle
+                dot_product = np.dot(min_disp1, min_disp2)
+                norm1 = np.linalg.norm(min_disp1)
+                norm2 = np.linalg.norm(min_disp2)
+
+                if norm1 > 1e-12 and norm2 > 1e-12:
+                    cos_angle = dot_product / (norm1 * norm2)
+                    # Clamp to avoid numerical issues
+                    if cos_angle > 1.0:
+                        cos_angle = 1.0
+                    elif cos_angle < -1.0:
+                        cos_angle = -1.0
+                    angle_rad = np.arccos(cos_angle)
+                    angles[k] = np.degrees(angle_rad)
+                else:
+                    # If one vector is zero (unlikely), assign NaN
+                    angles[k] = np.nan
+
+                k += 1
+
+    return angles
 
 
 @njit(cache=True, fastmath=True)
@@ -409,7 +501,7 @@ def warmup_jit():
     # progress bar
     progress_bar = tqdm(
         desc="Compiling jitted functions ...",
-        total=15,
+        total=17,
         colour="magenta",
         ascii=True,
         leave=True,
@@ -431,7 +523,11 @@ def warmup_jit():
     progress_bar.update(1)
     calculate_pbc_distances_batch(dummy_positions, dummy_positions, dummy_lattice, None)
     progress_bar.update(1)
+    calculate_pbc_cv_distances_batch(dummy_positions[0], dummy_positions, dummy_lattice)
+    progress_bar.update(1)
     distances = calculate_pbc_dot_distances_combinations(dummy_positions, dummy_lattice)
+    progress_bar.update(1)
+    calculate_pbc_angle_combinations(dummy_positions, dummy_lattice)
     progress_bar.update(1)
     fast_histogram(np.array([1.0, 2.0, 3.0]), 10.0, 10)
     progress_bar.update(1)

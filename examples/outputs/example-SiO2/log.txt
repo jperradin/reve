@@ -17,7 +17,7 @@ __version__ ➜  0.0.1
         ----------------
 	|- project_name: example-SiO2
 	|- export_directory: ./examples/outputs/example-SiO2
-	|- file_location: ./examples/inputs/example-SiO2-1008at.xyz
+	|- file_location: ./examples/inputs/example-SiO2-27216at.xyz
 	|- range_of_frames: (0, 1)
 	|- apply_pbc: True
 	|- wrap_position: True
@@ -38,28 +38,7 @@ __version__ ➜  0.0.1
 	
         Analysis Settings:
         -----------------
-		|- with_all: True
-		|- exclude_analyzers: ['neutron_structure_factor_fft']
 		|- overwrite: True
-		|- with_pair_distribution_function: True
-		  |- pdf_settings:
-		    |- r_max = 10.0
-		    |- bins = 800
-		    |- pairs_to_calculate = 
-		    ['O-O', 'O-Si', 'Si-Si', 'total']
-		|- with_bond_angular_distribution: True
-		  |- bad_settings:
-		    |- bins = 800
-		    |- triplets_to_calculate = 
-		    ['O-O-O', 'O-Si-O', 'Si-O-Si', 'Si-Si-Si']
-		|- with_structural_units: True
-		  |- strunits_settings:
-		    |- units_to_calculate = 
-		    ['SiO4', 'SiO5', 'SiO6', 'SiO7', 'OSi1', 'OSi2', 'OSi3', 'OSi4']
-		|- with_connectivity: True
-		  |- connect_settings:
-		    |- networking_species = Si
-		    |- bridging_species = O
 		|- with_polyhedricity: True
 		  |- poly_settings:
 		    |- central_species = Si
