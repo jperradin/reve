@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass, field
 import numpy as np
-from typing import Tuple, Optional, List
+from typing import Callable, Tuple, Optional, List
 
 
 @dataclass
@@ -82,13 +82,15 @@ class POLYAnalysisSettings:
     vertices_species: str = ""
     max_c: float = 0.1
     print_forms: bool = True
+    calculate_distributions: bool = True
 
     def __str__(self) -> str:
         line = "\t\t  |- poly_settings:\n"
         line += f"\t\t    |- central_species = {self.central_species}\n"
         line += f"\t\t    |- vertices_species = {self.vertices_species}\n"
         line += f"\t\t    |- max_c = {self.max_c}\n"
-        line += f"\t\t    |- print_forms = {self.print_forms}"
+        line += f"\t\t    |- print_forms = {self.print_forms}\n"
+        line += f"\t\t    |- calculate_distributions = {self.calculate_distributions}"
         return line
 
 
@@ -662,7 +664,11 @@ class SettingsBuilder:
         ):
             # Create a POLYAnalysisSettings object if not created
             poly_settings = POLYAnalysisSettings(
-                central_species="Si", vertices_species="O", max_c=0.2, print_forms=False
+                central_species="Si",
+                vertices_species="O",
+                max_c=0.2,
+                print_forms=False,
+                calculate_distributions=False,
             )
             analysis.poly_settings = poly_settings
 
