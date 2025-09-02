@@ -324,8 +324,6 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
         # Set the same normalization to all SiO5
         self.counts["5_fold_SBP"] = self.counts["5_fold"]
         self.counts["5_fold_TBP"] = self.counts["5_fold"]
-        self.counts["5_fold_sbp"] = self.counts["5_fold"]
-        self.counts["5_fold_tbp"] = self.counts["5_fold"]
 
         if self.poly_data:
             keys = list(self.poly_data[0].keys())
@@ -339,7 +337,13 @@ class PolyhedricityAnalyzer(BaseAnalyzer):
                 # Avoid zero division
                 if self.counts[key] == 0:
                     self.counts[key] = 1
-                self.polyhedricity[key] = np.sum(values, axis=0) / self.counts[key]
+                # Use number of SiO5 to normalize.
+                if key == "5_fold_sbp" or key == "5_fold_tbp":
+                    self.polyhedricity[key] = (
+                        np.sum(values, axis=0) / self.counts["5_fold"]
+                    )
+                else:
+                    self.polyhedricity[key] = np.sum(values, axis=0) / self.counts[key]
                 if key not in ["5_fold_SBP", "5_fold_TBP"]:
                     self.proportion[key] = self.counts[key] / (
                         len(self.central_nodes) * self.frame_processed_count
